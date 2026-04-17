@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoverWorld - Glide Gamefeel</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        
+        #game-canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .score-container {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .altitude-text {
+            font-size: 16px;
+            color: #aaa;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        .fuel-container {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            transition: border-color 0.3s;
+        }
+
+        .fuel-label {
+            color: white;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #fuel-status-text {
+            color: #ffaa00;
+            font-size: 0.8em;
+        }
+
+        .fuel-bar-bg {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #fuel-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ffaa00, #00ff00);
+            transition: width 0.1s linear, filter 0.3s;
+        }
+
+        .glide-warning {
+            filter: grayscale(100%) brightness(0.5);
+            background: #888 !important;
+        }
+        
+        .glide-border {
+            border-color: #ff3333 !important;
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.8);
+            animation: warningPulse 1s infinite alternate;
+        }
+
+        @keyframes warningPulse {
+            from { box-shadow: 0 0 10px rgba(255, 51, 51, 0.4); }
+            to { box-shadow: 0 0 30px rgba(255, 51, 51, 1.0); }
+        }
+
+        /* Contenedor del Slider */
+        .slider-container {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            pointer-events: auto;
+            font-size: 14px;
+            z-index: 50;
+        }
+
+        .slider-container label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .slider-container input[type=range] {
+            width: 200px;
+            cursor: pointer;
+            accent-color: #00ffaa;
+        }
+
+        /* --- ESTILOS DEL HUD DEBUG --- */
+        .plane-hud-label {
+            position: absolute;
+            color: #00ffaa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            background: rgba(0, 50, 0, 0.4);
+            border: 1px solid rgba(0, 255, 170, 0.5);
+            padding: 4px 8px;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            border-radius: 4px;
+            text-shadow: 0 0 4px #000;
+            transition: color 0.2s, border-color 0.2s;
+            z-index: 20;
+            display: none;
+        }
+        
+        #hud-descent {
+            position: absolute;
+            color: #00ffaa;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+            pointer-events: none;
+            transform: translate(15px, -50%);
+            text-shadow: 0px 0px 4px #000;
+            z-index: 20;
+            display: none;
+        }
+
+        /* Minimapa */
+        #minimap-container {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(0, 20, 40, 0.6);
+            border: 2px solid rgba(0, 255, 170, 0.4);
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+            overflow: hidden;
+            display: none;
+            z-index: 10;
+        }
+        #minimap-content {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            transform-origin: center;
+        }
+        .map-player {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 12px solid #00ffaa;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            filter: drop-shadow(0 0 4px #00ffaa);
+        }
+        .map-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ffaa00;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 4px #ffaa00;
+        }
+        .minimap-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            z-index: 5;
+        }
+
+        /* Pantallas de Menú */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            pointer-events: auto;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 64px;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px rgba(0, 150, 255, 0.8);
+        }
+
+        p.subtitle {
+            font-size: 20px;
+            color: #ccc;
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            background: #0088ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 136, 255, 0.4);
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        button:hover {
+            background: #00aaff;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(2px);
+        }
+
+        #final-score {
+            font-size: 32px;
+            color: #00ffaa;
+            margin-bottom: 30px;
+        }
+        
+        .controls-hint {
+            margin-top: 30px;
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .stall-warning {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff0000;
+            font-size: 48px;
+            font-weight: 900;
+            font-style: italic;
+            text-shadow: 0 0 10px #ff0000;
+            display: none;
+            z-index: 50;
+            animation: pulse 0.2s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            to { opacity: 0.3; transform: translate(-50%, -50%) scale(1.1); }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="score-container">
+                <div>Distancia: <span id="score">0</span> m</div>
+                <div class="altitude-text">Altitud: <span id="altitude">0</span> m</div>
+            </div>
+            <div class="fuel-container" id="fuel-container-box">
+                <div class="fuel-label">
+                    <span>Combustible</span>
+                    <span id="fuel-status-text">MOTORES ACTIVOS</span>
+                </div>
+                <div class="fuel-bar-bg">
+                    <div id="fuel-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="stall-warning" class="stall-warning">STALL!</div>
+
+        <!-- Slider de tiempo de planeo -->
+        <div class="slider-container">
+            <label for="glide-duration-slider">Tiempo de Planeo: <span id="glide-duration-val">10.0</span> s</label>
+            <input type="range" id="glide-duration-slider" min="5" max="30" step="1" value="10">
+        </div>
+
+        <!-- Elementos HUD 2D proyectados -->
+        <div id="hud-power" class="plane-hud-label">VEL: 0</div>
+        <div id="hud-angle" class="plane-hud-label">ANG: 0º</div>
+        <div id="hud-descent">Vy: 0</div>
+
+        <!-- Minimapa -->
+        <div id="minimap-container">
+            <div id="minimap-content"></div>
+            <div class="minimap-overlay"></div>
+            <div class="map-player" id="minimap-player"></div>
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen">
+        <h1>HoverWorld</h1>
+        <p class="subtitle">Administra tu fuel. Cuando se apague el motor, planea con precisión para exprimir cada metro antes de caer.</p>
+        <button id="start-btn">INICIAR VUELO</button>
+        <div class="controls-hint">Controles: WASD o Flechas direccionales</div>
+    </div>
+
+    <div id="game-over-screen" class="screen hidden">
+        <h1>Aterrizaje Forzoso</h1>
+        <div id="final-score">Distancia Total: 0 m</div>
+        <button id="restart-btn">VOLAR DE NUEVO</button>
+    </div>
+
+    <script>
+        // --- VARIABLES GLOBALES DEL JUEGO ---
+        let scene, camera, renderer;
+        let playerShip;
+        let groundGrid, groundPlane;
+        let fuels = [];
+        
+        // Elementos visuales
+        let dropShadow;
+        let dropLine; 
+        let windParticles;
+        let sceneryObjects = [];
+        
+        // Efectos Visuales Nuevos (Glide Gamefeel)
+        let wingTrails = [];
+        let engineSmokeParticles = [];
+        let groundDustParticles = [];
+        
+        // Geometrías y Materiales Globales
+        const treeLeavesGeom = new THREE.ConeGeometry(4, 12, 5);
+        const treeLeavesMat = new THREE.MeshStandardMaterial({color: 0x228B22, roughness: 0.8});
+        const treeTrunkGeom = new THREE.CylinderGeometry(1, 1, 4);
+        const treeTrunkMat = new THREE.MeshStandardMaterial({color: 0x5c4033});
+        const houseBaseGeom = new THREE.BoxGeometry(8, 6, 8);
+        const houseBaseMat = new THREE.MeshStandardMaterial({color: 0xe0e0e0});
+        const houseRoofGeom = new THREE.ConeGeometry(7, 4, 4);
+        houseRoofGeom.rotateY(Math.PI/4);
+        const houseRoofMat = new THREE.MeshStandardMaterial({color: 0xcc4444});
+        const mountainGeom = new THREE.ConeGeometry(40, 60, 5);
+        const mountainMat = new THREE.MeshStandardMaterial({color: 0x6e6e6e, roughness: 0.9});
+
+        // Estado y Variables Scripted
+        let isPlaying = false;
+        let isGliding = false;
+        let hasEngineDied = false;
+        let score = 0;
+        let maxFuel = 100;
+        let currentFuel = maxFuel;
+        
+        let flightSpeed = 120; // Velocidad de avance (scripted)
+        const STALL_SPEED = 40;
+        let glideDuration = 10.0; // Tiempo de planeo progresivo en segundos
+        let currentGlideTime = 0; 
+        let stallTimer = 0; 
+        
+        // --- VARIABLES GAMEFEEL ---
+        let shakeIntensity = 0;
+        let currentFov = 60;
+        let engineMesh; 
+
+        // Controles y físicas
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
+        let shipVelocity = new THREE.Vector3();
+        let targetRotation = new THREE.Vector2(0, 0); 
+        const maxPitch = Math.PI / 3; // 60 grados max
+        const maxYaw = Math.PI / 2;   
+        let totalDistanceMoved = 0;
+
+        // Elementos UI
+        const uiScore = document.getElementById('score');
+        const uiAltitude = document.getElementById('altitude');
+        const uiFuelFill = document.getElementById('fuel-bar-fill');
+        const uiFuelText = document.getElementById('fuel-status-text');
+        const uiFuelContainer = document.getElementById('fuel-container-box');
+        const uiStallWarning = document.getElementById('stall-warning');
+        
+        // Elementos Slider
+        const uiGlideSlider = document.getElementById('glide-duration-slider');
+        const uiGlideVal = document.getElementById('glide-duration-val');
+        uiGlideSlider.addEventListener('input', (e) => {
+            glideDuration = parseFloat(e.target.value);
+            uiGlideVal.innerText = glideDuration.toFixed(1);
+        });
+
+        // Elementos UI Debug
+        const uiHudPower = document.getElementById('hud-power');
+        const uiHudAngle = document.getElementById('hud-angle');
+        const uiHudDescent = document.getElementById('hud-descent');
+        const uiMinimapContainer = document.getElementById('minimap-container');
+        const uiMinimapContent = document.getElementById('minimap-content');
+        const uiMinimapPlayer = document.getElementById('minimap-player');
+
+        const screenStart = document.getElementById('start-screen');
+        const screenGameOver = document.getElementById('game-over-screen');
+        const uiFinalScore = document.getElementById('final-score');
+
+        // --- INICIALIZACIÓN ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); 
+            scene.fog = new THREE.Fog(0x87CEEB, 100, 800); 
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+            scene.add(camera);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(100, 200, 50);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 200;
+            dirLight.shadow.camera.bottom = -200;
+            dirLight.shadow.camera.left = -200;
+            dirLight.shadow.camera.right = 200;
+            scene.add(dirLight);
+
+            createPlayerShip();
+            createEnvironment();
+            createWind();
+            createGlideVisuals(); 
+
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('restart-btn').addEventListener('click', startGame);
+
+            animate();
+        }
+
+        function createGlideVisuals() {
+            // Estelas de las alas (Wing Trails)
+            const trailGeom = new THREE.CylinderGeometry(0.05, 0.05, 8, 4);
+            trailGeom.rotateX(Math.PI / 2);
+            trailGeom.translate(0, 0, 4); // Desplazar hacia atrás
+            const trailMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending });
+            
+            for(let i=0; i<2; i++) {
+                let trail = new THREE.Mesh(trailGeom, trailMat);
+                trail.position.set(i === 0 ? -7 : 7, 0, 2); // Puntas de las alas
+                playerShip.add(trail);
+                wingTrails.push(trail);
+            }
+
+            // Partículas de humo de avería
+            const smokeGeom = new THREE.BoxGeometry(1, 1, 1);
+            const smokeMat = new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.0 });
+            for(let i=0; i<15; i++) {
+                let smoke = new THREE.Mesh(smokeGeom, smokeMat);
+                smoke.userData = { active: false, life: 0, vel: new THREE.Vector3() };
+                scene.add(smoke);
+                engineSmokeParticles.push(smoke);
+            }
+
+            // Partículas de polvo del suelo
+            const dustGeom = new THREE.BoxGeometry(2, 2, 2);
+            const dustMat = new THREE.MeshBasicMaterial({ color: 0x8B7355, transparent: true, opacity: 0.0 });
+            for(let i=0; i<20; i++) {
+                let dust = new THREE.Mesh(dustGeom, dustMat);
+                dust.userData = { active: false, life: 0, vel: new THREE.Vector3() };
+                scene.add(dust);
+                groundDustParticles.push(dust);
+            }
+        }
+
+        function triggerEngineDeathSmoke() {
+            engineSmokeParticles.forEach(p => {
+                p.userData.active = true;
+                p.userData.life = 1.0 + Math.random();
+                p.position.copy(playerShip.position).add(new THREE.Vector3(0, 0, 6).applyEuler(playerShip.rotation));
+                
+                let randomDir = new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*10, Math.random()*20 + 20);
+                randomDir.applyEuler(playerShip.rotation);
+                p.userData.vel.copy(randomDir);
+                
+                p.material.opacity = 0.8;
+                p.scale.setScalar(1.0 + Math.random() * 2);
+            });
+        }
+
+        function spawnGroundDust() {
+            let p = groundDustParticles.find(p => !p.userData.active);
+            if (p) {
+                p.userData.active = true;
+                p.userData.life = 0.5 + Math.random() * 0.5;
+                p.position.set(
+                    playerShip.position.x + (Math.random()-0.5)*10, 
+                    0.5, 
+                    playerShip.position.z + (Math.random()-0.5)*5 + 10
+                );
+                p.userData.vel.set((Math.random()-0.5)*5, Math.random()*15, flightSpeed * 0.5);
+                p.material.opacity = 0.5;
+                p.scale.setScalar(1.0);
+            }
+        }
+
+        function updateParticles(delta) {
+            engineSmokeParticles.forEach(p => {
+                if (p.userData.active) {
+                    p.position.addScaledVector(p.userData.vel, delta);
+                    p.scale.setScalar(p.userData.life * 2);
+                    p.material.opacity = p.userData.life * 0.8;
+                    p.userData.life -= delta;
+                    if (p.userData.life <= 0) p.userData.active = false;
+                }
+            });
+
+            groundDustParticles.forEach(p => {
+                if (p.userData.active) {
+                    p.position.addScaledVector(p.userData.vel, delta);
+                    p.scale.setScalar(p.userData.life * 4);
+                    p.material.opacity = p.userData.life * 0.5;
+                    p.userData.life -= delta;
+                    if (p.userData.life <= 0) p.userData.active = false;
+                }
+            });
+
+            let targetTrailOpacity = 0.0;
+            let trailScaleZ = 1.0;
+            if (isGliding) {
+                targetTrailOpacity = Math.max(0, (flightSpeed - 80) / 100); 
+                trailScaleZ = 1.0 + (flightSpeed / 50);
+                wingTrails.forEach((t, i) => { t.position.y = Math.sin(Date.now() * 0.02 + i) * 0.2; });
+            } else if (flightSpeed > 180) { 
+                targetTrailOpacity = (flightSpeed - 180) / 70;
+                trailScaleZ = 2.0;
+            }
+
+            wingTrails.forEach(t => {
+                t.material.opacity = THREE.MathUtils.lerp(t.material.opacity, targetTrailOpacity, delta * 5);
+                t.scale.z = THREE.MathUtils.lerp(t.scale.z, trailScaleZ, delta * 5);
+            });
+        }
+
+        function createPlayerShip() {
+            playerShip = new THREE.Group();
+
+            const bodyGeom = new THREE.ConeGeometry(2, 10, 8);
+            bodyGeom.rotateX(Math.PI / 2); 
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            body.castShadow = true;
+            playerShip.add(body);
+
+            const wingGeom = new THREE.BoxGeometry(15, 0.5, 3);
+            const wingMat = new THREE.MeshStandardMaterial({ color: 0x0066cc });
+            const wings = new THREE.Mesh(wingGeom, wingMat);
+            wings.position.set(0, 0, 2);
+            wings.castShadow = true;
+            playerShip.add(wings);
+
+            const engineGeom = new THREE.CylinderGeometry(0.8, 1.5, 2, 8);
+            engineGeom.rotateX(Math.PI / 2);
+            engineGeom.translate(0, 0, -1); 
+            const engineMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.9 });
+            engineMesh = new THREE.Mesh(engineGeom, engineMat);
+            engineMesh.position.set(0, 0, 6); 
+            engineMesh.name = "engineGlow";
+            playerShip.add(engineMesh);
+
+            const hudRingGeo = new THREE.RingGeometry(8, 8.5, 32);
+            const hudRingMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+            const hudRing = new THREE.Mesh(hudRingGeo, hudRingMat);
+            hudRing.name = "hudRing";
+            playerShip.add(hudRing);
+
+            scene.add(playerShip);
+        }
+
+        function createEnvironment() {
+            const groundGeom = new THREE.PlaneGeometry(10000, 10000);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 });
+            groundPlane = new THREE.Mesh(groundGeom, groundMat);
+            groundPlane.rotation.x = -Math.PI / 2;
+            groundPlane.receiveShadow = true;
+            scene.add(groundPlane);
+
+            groundGrid = new THREE.GridHelper(10000, 200, 0x000000, 0x000000);
+            groundGrid.position.y = 0.1;
+            groundGrid.material.opacity = 0.2;
+            groundGrid.material.transparent = true;
+            scene.add(groundGrid);
+
+            const shadowGeom = new THREE.CircleGeometry(3, 16);
+            const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 });
+            dropShadow = new THREE.Mesh(shadowGeom, shadowMat);
+            dropShadow.rotation.x = -Math.PI / 2;
+            dropShadow.position.y = 0.2;
+            scene.add(dropShadow);
+
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffaa, linewidth: 2 });
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-10,0)]);
+            dropLine = new THREE.Line(lineGeo, lineMat);
+            scene.add(dropLine);
+        }
+
+        function createWind() {
+            windParticles = new THREE.Group();
+            const lineGeom = new THREE.CylinderGeometry(0.01, 0.01, 5, 3);
+            lineGeom.rotateX(Math.PI / 2);
+            const lineMat = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending});
+            
+            for(let i=0; i<60; i++){
+                let mesh = new THREE.Mesh(lineGeom, lineMat);
+                mesh.userData = { 
+                    offsetX: (Math.random()-0.5)*40, 
+                    offsetY: (Math.random()-0.5)*30, 
+                    offsetZ: -(Math.random()*40) - 10 
+                };
+                mesh.position.set(mesh.userData.offsetX, mesh.userData.offsetY, mesh.userData.offsetZ);
+                windParticles.add(mesh);
+            }
+            camera.add(windParticles);
+        }
+
+        function updateWind(delta) {
+            let speedRatio = Math.max(0, (flightSpeed - 80) / 100); 
+            let targetOpacity = speedRatio * 0.25; 
+
+            windParticles.children.forEach(p => {
+                p.userData.offsetZ += (flightSpeed * 0.5) * delta;
+                if(p.userData.offsetZ > -5) {
+                    p.userData.offsetZ -= 45; 
+                    p.userData.offsetX = (Math.random()-0.5)*40;
+                    p.userData.offsetY = (Math.random()-0.5)*30;
+                }
+                
+                p.position.set(p.userData.offsetX, p.userData.offsetY, p.userData.offsetZ);
+                p.scale.z = Math.max(0.1, speedRatio * 3); 
+                p.material.opacity = targetOpacity;
+            });
+        }
+
+        function createSceneryObject() {
+            let angle = playerShip.rotation.y + (Math.random() - 0.5) * Math.PI * 1.5; 
+            let distance = 600 + Math.random() * 400; 
+            
+            let x = playerShip.position.x - Math.sin(angle) * distance;
+            let z = playerShip.position.z - Math.cos(angle) * distance;
+            
+            let type = Math.random();
+            let group = new THREE.Group();
+            
+            if (type < 0.6) { 
+                let trunk = new THREE.Mesh(treeTrunkGeom, treeTrunkMat); trunk.position.y = 2; trunk.castShadow = true;
+                let leaves = new THREE.Mesh(treeLeavesGeom, treeLeavesMat); leaves.position.y = 8; leaves.castShadow = true;
+                group.add(trunk, leaves);
+            } else if (type < 0.85) { 
+                let base = new THREE.Mesh(houseBaseGeom, houseBaseMat); base.position.y = 3; base.castShadow = true;
+                let roof = new THREE.Mesh(houseRoofGeom, houseRoofMat); roof.position.y = 8; roof.castShadow = true;
+                group.add(base, roof); group.rotation.y = Math.random() * Math.PI;
+            } else { 
+                let mountain = new THREE.Mesh(mountainGeom, mountainMat); mountain.position.y = 20 + Math.random() * 10;
+                let scale = 1 + Math.random() * 2; mountain.scale.set(scale, scale, scale); mountain.castShadow = true;
+                group.add(mountain);
+            }
+            
+            group.position.set(x, 0, z);
+            scene.add(group);
+            sceneryObjects.push(group);
+        }
+
+        function updateScenery() {
+            for (let i = sceneryObjects.length - 1; i >= 0; i--) {
+                let obj = sceneryObjects[i];
+                if (obj.position.distanceTo(playerShip.position) > 1200 || (obj.position.z > playerShip.position.z + 100)) { 
+                    scene.remove(obj); sceneryObjects.splice(i, 1);
+                }
+            }
+            while (sceneryObjects.length < 80) { createSceneryObject(); }
+        }
+
+        function spawnFuel() {
+            const fuelGeom = new THREE.TorusGeometry(3, 1, 8, 16);
+            const fuelMat = new THREE.MeshStandardMaterial({ color: 0x00ffaa, emissive: 0x00ffaa, emissiveIntensity: 0.5 });
+            const fuel = new THREE.Mesh(fuelGeom, fuelMat);
+            
+            const zOffset = playerShip.position.z - 600 - Math.random() * 400;
+            const xOffset = playerShip.position.x + (Math.random() - 0.5) * 400;
+            const yOffset = 10 + Math.random() * 80; 
+            
+            fuel.position.set(xOffset, yOffset, zOffset);
+            fuel.castShadow = true;
+            
+            scene.add(fuel);
+            fuels.push(fuel);
+        }
+
+        function updateFuels(delta) {
+            for (let i = fuels.length - 1; i >= 0; i--) {
+                const fuel = fuels[i];
+                fuel.rotation.x += 2 * delta; fuel.rotation.y += 2 * delta;
+
+                if (playerShip.position.distanceTo(fuel.position) < 15) {
+                    currentFuel = Math.min(maxFuel, currentFuel + 25);
+                    scene.remove(fuel); fuels.splice(i, 1);
+                    uiFuelFill.style.filter = "brightness(2)"; setTimeout(() => uiFuelFill.style.filter = "none", 200);
+                    
+                    shakeIntensity += 0.5; currentFov += 5; // Gamefeel Impact
+                    
+                    if(isGliding) {
+                        isGliding = false; hasEngineDied = false;
+                        uiFuelFill.classList.remove('glide-warning');
+                        uiFuelContainer.classList.remove('glide-border');
+                        uiFuelText.innerText = "MOTORES RE-ENCENDIDOS";
+                        uiFuelText.style.color = "#00ffaa";
+                        playerShip.getObjectByName("engineGlow").material.color.setHex(0xff8800);
+                        setTimeout(() => { if(!isGliding) uiFuelText.innerText = "MOTORES ACTIVOS"; uiFuelText.style.color = "#ffaa00"; }, 2000);
+                    }
+                    continue;
+                }
+
+                if (fuel.position.z > playerShip.position.z + 100) { scene.remove(fuel); fuels.splice(i, 1); }
+            }
+            if (fuels.length < 5 && Math.random() < 0.05) spawnFuel();
+        }
+
+        function updateMinimap() {
+            const mapScale = 0.1; 
+            let mapHTML = '';
+            fuels.forEach(fuel => {
+                let dx = fuel.position.x - playerShip.position.x; let dz = fuel.position.z - playerShip.position.z;
+                let px = 75 + (dx * mapScale); let py = 75 + (dz * mapScale); 
+                let distToCenter = Math.sqrt(Math.pow(px - 75, 2) + Math.pow(py - 75, 2));
+                if (distToCenter < 75) mapHTML += `<div class="map-dot" style="left: ${px}px; top: ${py}px;"></div>`;
+            });
+            uiMinimapContent.innerHTML = mapHTML;
+            uiMinimapContent.style.transform = `rotate(${playerShip.rotation.y}rad)`;
+        }
+
+        function onKeyDown(event) { if (keys.hasOwnProperty(event.key)) keys[event.key] = true; if (keys.hasOwnProperty(event.code)) keys[event.code] = true; }
+        function onKeyUp(event) { if (keys.hasOwnProperty(event.key)) keys[event.key] = false; if (keys.hasOwnProperty(event.code)) keys[event.code] = false; }
+
+        function startGame() {
+            screenStart.classList.add('hidden');
+            screenGameOver.classList.add('hidden');
+            uiStallWarning.style.display = 'none';
+            
+            uiHudPower.style.display = 'block'; uiHudAngle.style.display = 'block'; uiHudDescent.style.display = 'block'; uiMinimapContainer.style.display = 'block';
+
+            playerShip.position.set(0, 100, 0);
+            playerShip.rotation.set(0, 0, 0);
+            targetRotation.set(0, 0);
+            
+            currentFuel = maxFuel; score = 0; totalDistanceMoved = 0;
+            isGliding = false; hasEngineDied = false; isPlaying = true;
+            flightSpeed = 120; shipVelocity.set(0,0,0); shakeIntensity = 0; stallTimer = 0; currentGlideTime = 0;
+
+            fuels.forEach(f => scene.remove(f)); fuels = [];
+            sceneryObjects.forEach(obj => scene.remove(obj)); sceneryObjects = [];
+            
+            engineSmokeParticles.forEach(p => p.userData.active = false);
+            groundDustParticles.forEach(p => p.userData.active = false);
+
+            uiFuelFill.classList.remove('glide-warning');
+            uiFuelContainer.classList.remove('glide-border');
+            uiFuelText.innerText = "MOTORES ACTIVOS";
+            uiFuelText.style.color = "#ffaa00";
+            playerShip.getObjectByName("engineGlow").material.color.setHex(0xff8800);
+            
+            for(let i=0; i<3; i++) spawnFuel();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            screenGameOver.classList.remove('hidden');
+            uiFinalScore.innerText = `Distancia Total: ${Math.floor(score)} m`;
+            shakeIntensity = 8.0; 
+            uiStallWarning.style.display = 'none';
+
+            uiHudPower.style.display = 'none'; uiHudAngle.style.display = 'none'; uiHudDescent.style.display = 'none'; uiMinimapContainer.style.display = 'none';
+        }
+
+        let clock = new THREE.Clock();
+
+        function updateFlightPhysics(delta) {
+            if (!isPlaying) return;
+
+            // --- 1. COMBUSTIBLE Y EVENTO DE APAGADO ---
+            if (currentFuel > 0) {
+                currentFuel -= 5 * delta;
+                if (currentFuel <= 0) {
+                    currentFuel = 0;
+                    isGliding = true;
+                }
+            }
+
+            if (isGliding && !hasEngineDied) {
+                hasEngineDied = true;
+                shakeIntensity = 4.0; 
+                currentFov -= 5; 
+                triggerEngineDeathSmoke(); 
+                
+                uiFuelFill.classList.add('glide-warning');
+                uiFuelContainer.classList.add('glide-border');
+                uiFuelText.innerText = "EMERGENCIA: MODO PLANEO";
+                uiFuelText.style.color = "#ff0000";
+                playerShip.getObjectByName("engineGlow").material.color.setHex(0x333333);
+            }
+            
+            uiFuelFill.style.width = `${(currentFuel / maxFuel) * 100}%`;
+
+            // --- 2. INPUTS DE VUELO ---
+            let pitchInput = 0; 
+            let yawInput = 0;   
+
+            if (keys.w || keys.ArrowUp) pitchInput = -1; 
+            if (keys.s || keys.ArrowDown) pitchInput = 1; 
+            if (keys.a || keys.ArrowLeft) yawInput = 1;
+            if (keys.d || keys.ArrowRight) yawInput = -1;
+
+            // --- 3. VELOCIDAD DE AVANCE SCRIPTED ---
+            let targetSpeed = 120; 
+            
+            if (isGliding) {
+                let glideProgress = Math.min(currentGlideTime / glideDuration, 1.0);
+                targetSpeed = THREE.MathUtils.lerp(120, 60, Math.pow(glideProgress, 1.5));
+            }
+
+            let pitchAngle = playerShip.rotation.x; 
+            
+            targetSpeed += (-pitchAngle * 180); 
+            let turnPenalty = Math.abs(playerShip.rotation.z) * 50; 
+            targetSpeed -= turnPenalty;
+
+            if (flightSpeed < STALL_SPEED && stallTimer <= 0) {
+                stallTimer = 1.0; 
+            }
+            if (stallTimer > 0) stallTimer -= delta;
+            
+            let isStalling = stallTimer > 0;
+            let speedAccel = isStalling ? 0.6 : 2.0;
+            flightSpeed = THREE.MathUtils.lerp(flightSpeed, targetSpeed, delta * speedAccel);
+            flightSpeed = THREE.MathUtils.clamp(flightSpeed, 20, 250); 
+
+            // --- 4. CONTROLES Y ROTACIÓN ---
+            const turnSpeed = 1.5;
+            const currentTurnSpeed = isGliding ? turnSpeed * 0.7 : turnSpeed;
+            
+            if (isStalling) {
+                targetRotation.x = THREE.MathUtils.lerp(targetRotation.x, -maxPitch * 0.6, 3 * delta);
+                targetRotation.y += yawInput * (currentTurnSpeed * 0.2) * delta; 
+                shakeIntensity += 0.2; 
+                uiStallWarning.style.display = 'block';
+            } else {
+                targetRotation.x += pitchInput * currentTurnSpeed * delta;
+                targetRotation.y += yawInput * currentTurnSpeed * delta;
+                uiStallWarning.style.display = 'none';
+
+                // SOFT STALL PROGRESIVO
+                if (isGliding) {
+                    let speedDeficit = Math.max(0, 110 - flightSpeed); 
+                    let softStallForce = (speedDeficit / 60) * 1.2; 
+                    targetRotation.x -= softStallForce * delta;
+                }
+            }
+
+            targetRotation.x = THREE.MathUtils.clamp(targetRotation.x, -maxPitch, maxPitch);
+            targetRotation.y = THREE.MathUtils.clamp(targetRotation.y, -maxYaw, maxYaw);
+
+            playerShip.rotation.x = THREE.MathUtils.lerp(playerShip.rotation.x, targetRotation.x, 5 * delta);
+            playerShip.rotation.y = THREE.MathUtils.lerp(playerShip.rotation.y, targetRotation.y, 5 * delta);
+            
+            let targetRoll = yawInput * Math.PI / 4;
+            if (isStalling) targetRoll += Math.sin(Date.now() * 0.02) * 0.3; 
+            playerShip.rotation.z = THREE.MathUtils.lerp(playerShip.rotation.z, targetRoll, 4 * delta);
+
+            let targetEngineScaleZ = 1.0;
+            let targetEngineOpacity = 0.9;
+            if (isGliding) {
+                targetEngineScaleZ = 0.0; targetEngineOpacity = 0.0;
+            } else {
+                targetEngineScaleZ = 0.5 + (flightSpeed / 100) + Math.random() * 0.2; 
+            }
+            engineMesh.scale.z = THREE.MathUtils.lerp(engineMesh.scale.z, targetEngineScaleZ, 15 * delta);
+            engineMesh.material.opacity = THREE.MathUtils.lerp(engineMesh.material.opacity, targetEngineOpacity, 10 * delta);
+
+            // --- 5. MOVIMIENTO EN EL ESPACIO ---
+            let forwardVector = new THREE.Vector3(0, 0, -1);
+            forwardVector.applyEuler(new THREE.Euler(playerShip.rotation.x, playerShip.rotation.y, 0)); 
+            
+            shipVelocity.copy(forwardVector).multiplyScalar(flightSpeed);
+
+            if (isGliding) {
+                currentGlideTime += delta;
+                let glideProgress = Math.min(currentGlideTime / glideDuration, 1.0);
+
+                if (shipVelocity.y > 0) shipVelocity.y *= (1.0 - glideProgress * 0.95); 
+
+                let progressiveDescentRate = THREE.MathUtils.lerp(2.0, 45.0, Math.pow(glideProgress, 1.5));
+                
+                const groundDistance = playerShip.position.y;
+                if (groundDistance < 20) {
+                    const groundFactor = (20 - groundDistance) / 20; 
+                    progressiveDescentRate *= (1 - (groundFactor * 0.85)); 
+                    
+                    if (Math.random() < groundFactor && flightSpeed > 50) {
+                        spawnGroundDust();
+                    }
+                }
+
+                shipVelocity.y -= progressiveDescentRate;
+            }
+
+            playerShip.position.addScaledVector(shipVelocity, delta);
+
+            if (playerShip.position.y > 150) playerShip.position.y = 150;
+            uiAltitude.innerText = Math.max(0, Math.floor(playerShip.position.y));
+
+            // --- 6. COLISIÓN CON EL SUELO ---
+            if (playerShip.position.y <= 2) { 
+                playerShip.position.y = 2;
+                gameOver();
+            }
+
+            // --- 7. ACTUALIZACIONES VARIAS ---
+            groundGrid.position.x = Math.floor(playerShip.position.x / 200) * 200;
+            groundGrid.position.z = Math.floor(playerShip.position.z / 200) * 200;
+            
+            dropShadow.position.x = playerShip.position.x;
+            dropShadow.position.z = playerShip.position.z;
+            let shadowScale = Math.max(0.1, 1 - (playerShip.position.y / 80));
+            dropShadow.scale.set(shadowScale, shadowScale, shadowScale);
+
+            const linePositions = dropLine.geometry.attributes.position.array;
+            linePositions[0] = playerShip.position.x; linePositions[1] = playerShip.position.y; linePositions[2] = playerShip.position.z;
+            linePositions[3] = playerShip.position.x; linePositions[4] = 0.5; linePositions[5] = playerShip.position.z;
+            dropLine.geometry.attributes.position.needsUpdate = true;
+
+            if (isGliding) {
+                dropLine.material.color.setHex(0xff4444);
+                uiHudDescent.style.color = "#ff4444"; uiHudPower.style.color = "#ff4444"; uiHudPower.style.borderColor = "#ff4444";
+                playerShip.getObjectByName("hudRing").material.color.setHex(0xff4444);
+                uiMinimapPlayer.style.borderBottomColor = "#ff4444"; uiMinimapContainer.style.borderColor = "rgba(255, 68, 68, 0.4)";
+            } else {
+                dropLine.material.color.setHex(0x00ffaa);
+                uiHudDescent.style.color = "#00ffaa"; uiHudPower.style.color = "#00ffaa"; uiHudPower.style.borderColor = "rgba(0, 255, 170, 0.5)";
+                playerShip.getObjectByName("hudRing").material.color.setHex(0x00ffaa);
+                uiMinimapPlayer.style.borderBottomColor = "#00ffaa"; uiMinimapContainer.style.borderColor = "rgba(0, 255, 170, 0.4)";
+            }
+
+            uiHudDescent.innerText = `Vy: ${shipVelocity.y.toFixed(1)}`;
+            uiHudPower.innerText = `VEL: ${Math.floor(flightSpeed)}`;
+            uiHudAngle.innerText = `ANG: ${(playerShip.rotation.x * 180 / Math.PI).toFixed(0)}º`; 
+
+            const hw = window.innerWidth / 2; const hh = window.innerHeight / 2;
+            const shipScreenPos = playerShip.position.clone().project(camera);
+            const sX = (shipScreenPos.x * hw) + hw; const sY = -(shipScreenPos.y * hh) + hh;
+
+            uiHudPower.style.left = `${sX - 90}px`; uiHudPower.style.top = `${sY}px`;
+            uiHudAngle.style.left = `${sX + 90}px`; uiHudAngle.style.top = `${sY}px`;
+
+            const midScreenPos = new THREE.Vector3(playerShip.position.x, playerShip.position.y / 2, playerShip.position.z).project(camera);
+            uiHudDescent.style.left = `${(midScreenPos.x * hw) + hw}px`; uiHudDescent.style.top = `${-(midScreenPos.y * hh) + hh}px`;
+
+            totalDistanceMoved += (flightSpeed * delta);
+            score = Math.floor(totalDistanceMoved / 10);
+            uiScore.innerText = score;
+
+            updateFuels(delta); updateWind(delta); updateScenery(); updateMinimap(); updateParticles(delta);
+
+            // --- 8. CÁMARA FOLLOW Y GAMEFEEL ---
+            let camHeightOffset = 15;
+            let camDistanceOffset = 45;
+            
+            if(playerShip.position.y < 20) camHeightOffset = Math.max(5, playerShip.position.y * 0.7);
+            
+            if(isGliding) {
+                let glideProgress = Math.min(currentGlideTime / glideDuration, 1.0);
+                camHeightOffset += (glideProgress * 15); 
+                camDistanceOffset += (glideProgress * 15); 
+            }
+
+            const cameraOffset = new THREE.Vector3(0, camHeightOffset, camDistanceOffset);
+            cameraOffset.applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0));
+            const targetCameraPos = playerShip.position.clone().add(cameraOffset);
+            
+            camera.position.lerp(targetCameraPos, 4 * delta);
+            
+            const lookTarget = playerShip.position.clone().add(new THREE.Vector3(0, 0, -50).applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0)));
+            camera.lookAt(lookTarget);
+
+            if (shakeIntensity > 0) {
+                camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+                camera.position.y += (Math.random() - 0.5) * shakeIntensity;
+                camera.position.z += (Math.random() - 0.5) * shakeIntensity;
+                shakeIntensity = THREE.MathUtils.lerp(shakeIntensity, 0, delta * 10);
+            }
+
+            let targetFov = 60 + (flightSpeed - 60) * 0.2;
+            if (isStalling) targetFov -= 15; 
+            if (playerShip.position.y < 10) targetFov += 10; 
+            
+            currentFov = THREE.MathUtils.lerp(currentFov, targetFov, delta * 3);
+            if (Math.abs(camera.fov - currentFov) > 0.1) {
+                camera.fov = currentFov;
+                camera.updateProjectionMatrix();
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            if (isPlaying) {
+                updateFlightPhysics(delta);
+            } else {
+                camera.position.x = Math.sin(Date.now() * 0.0005) * 50;
+                camera.position.z = Math.cos(Date.now() * 0.0005) * 50;
+                camera.position.y = 20;
+                camera.lookAt(0, 10, 0);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
