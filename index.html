@@ -267,7 +267,7 @@
             background: rgba(0, 20, 40, 0.64);
             border: 2px solid rgba(0, 255, 170, 0.4);
             backdrop-filter: blur(4px);
-            overflow: hidden;
+            overflow: visible;
             pointer-events: none;
             display: none;
             z-index: 10;
@@ -277,6 +277,12 @@
             position: absolute;
             inset: 0;
             transform-origin: center;
+        }
+
+        #minimap-arrows {
+            position: absolute;
+            inset: 0;
+            z-index: 8;
         }
 
         .map-player {
@@ -325,6 +331,25 @@
             border-radius: 50%;
             box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.8);
             z-index: 5;
+        }
+
+        .mission-arrow {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 16px solid var(--mission-accent);
+            transform-origin: center center;
+            filter: drop-shadow(0 0 6px rgba(255, 227, 106, 0.85));
+            z-index: 12;
+        }
+
+        .mission-arrow.truck {
+            border-bottom-color: var(--danger-accent);
+            filter: drop-shadow(0 0 6px rgba(255, 90, 79, 0.9));
         }
 
         .screen {
@@ -541,6 +566,7 @@
 
         <div id="minimap-container">
             <div id="minimap-content"></div>
+            <div id="minimap-arrows"></div>
             <div class="minimap-overlay"></div>
             <div class="map-player" id="minimap-player"></div>
         </div>
@@ -684,6 +710,7 @@
         const uiHudDescent = document.getElementById("hud-descent");
         const uiMinimapContainer = document.getElementById("minimap-container");
         const uiMinimapContent = document.getElementById("minimap-content");
+        const uiMinimapArrows = document.getElementById("minimap-arrows");
         const uiMinimapPlayer = document.getElementById("minimap-player");
         const screenStart = document.getElementById("start-screen");
         const screenGameOver = document.getElementById("game-over-screen");
@@ -1535,6 +1562,8 @@
         function updateMinimap() {
             const mapScale = 0.1;
             let html = "";
+            let arrowHtml = "";
+            const missionArrowEntries = [];
 
             worldObjects.forEach((object) => {
                 if (object.collected) return;
@@ -1543,12 +1572,35 @@
                 const px = 80 + (dx * mapScale);
                 const py = 80 + (dz * mapScale);
                 const distToCenter = Math.hypot(px - 80, py - 80);
-                if (distToCenter >= 80) return;
 
-                html += `<div class="map-dot ${object.minimapClass}" style="left:${px}px;top:${py}px;"></div>`;
+                if (distToCenter < 80) {
+                    html += `<div class="map-dot ${object.minimapClass}" style="left:${px}px;top:${py}px;"></div>`;
+                }
+
+                if (object.kind === "missionTarget") {
+                    const relativeAngle = Math.atan2(dx, dz) - playerShip.rotation.y + Math.PI;
+                    const normalizedAngle = ((relativeAngle + Math.PI) % (Math.PI * 2)) - Math.PI;
+                    const missionDistance = Math.hypot(dx, dz);
+                    missionArrowEntries.push({
+                        angle: normalizedAngle,
+                        isTruck: object.prefab === "truck",
+                        distance: missionDistance
+                    });
+                }
             });
 
+            missionArrowEntries
+                .sort((a, b) => a.distance - b.distance)
+                .slice(0, 3)
+                .forEach((entry) => {
+                    const radius = 92;
+                    const x = Math.sin(entry.angle) * radius;
+                    const y = -Math.cos(entry.angle) * radius;
+                    arrowHtml += `<div class="mission-arrow ${entry.isTruck ? "truck" : ""}" style="transform: translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${entry.angle}rad);"></div>`;
+                });
+
             uiMinimapContent.innerHTML = html;
+            uiMinimapArrows.innerHTML = arrowHtml;
             uiMinimapContent.style.transform = `rotate(${playerShip.rotation.y}rad)`;
         }
 
@@ -1581,7 +1633,11 @@
         }
 
         function onPointerDown(event) {
-            if (event.pointerType !== "touch" || touchState.active || isInteractiveUi(event.target)) return;
+            const isPrimaryPointer = event.isPrimary !== false;
+            const isMouseLike = event.pointerType === "mouse" || event.pointerType === "";
+            const hasMainButton = typeof event.button !== "number" || event.button === 0;
+            if (!isPrimaryPointer || touchState.active || isInteractiveUi(event.target)) return;
+            if (isMouseLike && !hasMainButton) return;
 
             touchState.active = true;
             touchState.pointerId = event.pointerId;
