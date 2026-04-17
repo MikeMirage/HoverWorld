@@ -645,10 +645,94 @@
         .meta-grid {
             width: min(980px, 94vw);
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 1fr);
             gap: 14px;
-            margin-top: 16px;
+            margin-top: 0;
             text-align: left;
+        }
+
+        .menu-shortcuts {
+            width: min(980px, 94vw);
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 0;
+        }
+
+        .menu-shortcut-btn {
+            position: relative;
+            min-height: 44px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            background: rgba(7, 19, 29, 0.72);
+            color: #dce7f0;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        .menu-shortcut-icon {
+            display: block;
+            font-size: 17px;
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+
+        .menu-shortcut-label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 0.02em;
+        }
+
+        .menu-shortcut-btn.active {
+            background: linear-gradient(180deg, rgba(47, 184, 255, 0.35) 0%, rgba(9, 131, 235, 0.45) 100%);
+            border-color: rgba(123, 216, 255, 0.8);
+            color: #ffffff;
+        }
+
+        .shortcut-badge {
+            position: absolute;
+            top: 5px;
+            right: 6px;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            padding: 0 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 800;
+            color: #fff;
+            background: #ff4a57;
+            box-shadow: 0 0 12px rgba(255, 74, 87, 0.45);
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.16s ease, transform 0.16s ease;
+            pointer-events: none;
+        }
+
+        .shortcut-badge.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .menu-dock {
+            position: sticky;
+            bottom: 0;
+            width: min(980px, 94vw);
+            margin-top: auto;
+            padding: 10px 0 calc(8px + env(safe-area-inset-bottom));
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(2, 12, 20, 0.88) 26%, rgba(2, 12, 20, 0.98) 100%);
+            z-index: 2;
+        }
+
+        .start-meta-sheet {
+            width: min(980px, 94vw);
+            margin-top: 2px;
         }
 
         .meta-panel {
@@ -658,6 +742,10 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
             backdrop-filter: blur(8px);
+        }
+
+        .meta-panel.is-hidden {
+            display: none;
         }
 
         .meta-eyebrow {
@@ -724,6 +812,11 @@
             box-shadow: none;
         }
 
+        .meta-button:not(:disabled) {
+            border-color: rgba(0, 201, 255, 0.5);
+            background: linear-gradient(180deg, rgba(0, 199, 255, 0.26) 0%, rgba(0, 122, 231, 0.3) 100%);
+        }
+
         .meta-button:disabled {
             opacity: 0.45;
             cursor: not-allowed;
@@ -757,6 +850,21 @@
             color: #ffffff;
             font-size: 12px;
             font-weight: 700;
+        }
+
+        #meta-credits-pill {
+            background: linear-gradient(180deg, rgba(255, 194, 0, 0.24) 0%, rgba(255, 138, 0, 0.22) 100%);
+            border: 1px solid rgba(255, 197, 44, 0.55);
+        }
+
+        #meta-discovery-pill {
+            background: linear-gradient(180deg, rgba(140, 227, 255, 0.22) 0%, rgba(35, 152, 255, 0.2) 100%);
+            border: 1px solid rgba(114, 206, 255, 0.5);
+        }
+
+        #meta-parts-pill {
+            background: linear-gradient(180deg, rgba(154, 255, 151, 0.24) 0%, rgba(0, 212, 150, 0.2) 100%);
+            border: 1px solid rgba(104, 255, 181, 0.5);
         }
 
         .meta-upgrades {
@@ -793,7 +901,7 @@
             flex-direction: column;
             align-items: center;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 0;
         }
 
         .stall-warning {
@@ -846,6 +954,219 @@
             background: rgba(255, 255, 255, 0.7);
             transform: translate(calc(-50% + var(--knob-x, 0px)), calc(-50% + var(--knob-y, 0px)));
             box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+        }
+
+        @media (max-width: 900px) {
+            .screen {
+                justify-content: flex-start;
+                gap: 16px;
+                padding: 20px 14px 36px;
+            }
+
+            h1 {
+                font-size: clamp(40px, 13vw, 58px);
+                letter-spacing: 0.1em;
+            }
+
+            .subtitle {
+                width: min(100%, 620px);
+                font-size: 18px;
+                line-height: 1.55;
+                margin-bottom: 0;
+            }
+
+            .meta-grid {
+                width: min(100%, 680px);
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin-top: 0;
+            }
+
+            .start-topbar {
+                width: min(100%, 680px);
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .start-currencies {
+                justify-content: flex-start;
+            }
+
+            .start-currencies .meta-pill {
+                min-height: 34px;
+                font-size: 13px;
+                padding: 7px 10px;
+            }
+
+            .start-hero {
+                width: min(100%, 680px);
+                gap: 10px;
+            }
+
+            .start-hero-copy {
+                font-size: 15px;
+                line-height: 1.45;
+            }
+
+            .menu-shortcuts {
+                width: min(100%, 680px);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .menu-shortcut-btn {
+                min-height: 52px;
+                font-size: 16px;
+                border-radius: 14px;
+            }
+
+            .menu-shortcut-icon {
+                font-size: 18px;
+            }
+
+            .menu-shortcut-label {
+                font-size: 12px;
+            }
+
+            .meta-panel {
+                padding: 16px;
+                border-radius: 18px;
+                background: rgba(9, 20, 30, 0.84);
+                border-color: rgba(255, 255, 255, 0.18);
+            }
+
+            .meta-eyebrow {
+                font-size: 13px;
+                margin-bottom: 8px;
+            }
+
+            .meta-title {
+                font-size: 26px;
+                margin-bottom: 8px;
+            }
+
+            .meta-copy {
+                font-size: 16px;
+                line-height: 1.5;
+                margin-bottom: 12px;
+            }
+
+            .meta-stats {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .meta-stat {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+
+            .meta-stat strong {
+                font-size: 16px;
+            }
+
+            .meta-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .meta-button {
+                width: 100%;
+                min-height: 52px;
+                padding: 12px 16px;
+                font-size: 16px;
+                font-weight: 800;
+                letter-spacing: 0.01em;
+            }
+
+            .meta-list {
+                gap: 10px;
+                font-size: 15px;
+            }
+
+            .meta-list span {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 2px;
+                padding: 8px 10px;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.06);
+            }
+
+            .meta-currency {
+                gap: 10px;
+                margin-bottom: 12px;
+            }
+
+            .meta-pill {
+                width: 100%;
+                min-height: 44px;
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                font-size: 15px;
+                padding: 10px 12px;
+            }
+
+            .upgrade-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 10px;
+            }
+
+            .upgrade-copy {
+                font-size: 14px;
+            }
+
+            .upgrade-copy strong {
+                font-size: 16px;
+            }
+
+            .start-actions {
+                width: min(100%, 680px);
+                gap: 12px;
+                margin-top: 2px;
+            }
+
+            #start-btn.start-primary-cta {
+                min-width: 100%;
+                font-size: 22px;
+            }
+
+            .menu-dock {
+                width: min(100%, 680px);
+                margin-top: 6px;
+                padding-top: 8px;
+            }
+
+            .start-meta-sheet {
+                width: min(100%, 680px);
+            }
+
+            #start-btn,
+            #restart-btn,
+            #menu-btn {
+                width: 100%;
+                min-height: 56px;
+                font-size: 20px;
+                border-radius: 14px;
+                background: linear-gradient(180deg, #26c5ff 0%, #0b89f4 100%);
+            }
+
+            .controls-hint {
+                max-width: 100%;
+                font-size: 15px;
+                line-height: 1.55;
+                color: #cfd7df;
+            }
+
+            #final-score {
+                font-size: clamp(32px, 7vw, 40px);
+            }
+
+            #final-mission-summary {
+                font-size: 18px;
+            }
         }
 
         @media (min-width: 901px) {
@@ -962,7 +1283,15 @@
             }
 
             .meta-grid {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .menu-shortcuts {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+
+            .start-topbar {
+                grid-template-columns: minmax(0, 1fr) auto;
             }
         }
     </style>
@@ -1027,6 +1356,10 @@
                 <input type="range" id="dive-boost-slider" min="60" max="260" step="5" value="180">
             </div>
             <div class="slider-group">
+                <label for="camera-bank-slider">Banking camara: <span id="camera-bank-val">4.0</span>°</label>
+                <input type="range" id="camera-bank-slider" min="0" max="12" step="0.5" value="4">
+            </div>
+            <div class="slider-group">
                 <button type="button" id="camera-mode-toggle" class="camera-toggle">Camara: Arcade Horizon</button>
             </div>
         </div>
@@ -1045,10 +1378,26 @@
     </div>
 
     <div id="start-screen" class="screen">
-        <h1>HoverWorld</h1>
-        <p class="subtitle">Descubre cuánta distancia puedes recorrer en un mundo abierto en constante expansión. Cumple misiones consecutivas, recoge reliquias del cielo y aprovecha cada gota de fuel.</p>
-        <div class="meta-grid">
-            <div class="meta-panel">
+        <div class="start-topbar">
+            <div class="start-loadout">
+                <strong id="start-loadout-aircraft">Falcon Mk.I</strong>
+                <span id="start-loadout-world">Frontier Reach</span>
+            </div>
+            <div class="start-currencies">
+                <div class="meta-pill" id="start-credits-pill">Créditos: 0</div>
+                <div class="meta-pill" id="start-discovery-pill">Discovery: 0</div>
+                <div class="meta-pill" id="start-parts-pill">Parts: 0</div>
+            </div>
+        </div>
+        <div class="start-hero">
+            <h1>HoverWorld</h1>
+            <p class="subtitle">Despega, completa contratos y vuelve más fuerte.</p>
+            <button id="start-btn" class="start-primary-cta">JUGAR</button>
+            <div class="start-hero-copy">Selecciona una seccion en la barra inferior para editar avion, mundo y progreso.</div>
+        </div>
+        <div class="start-meta-sheet">
+            <div class="meta-grid">
+                <div class="meta-panel" data-meta-section="hangar">
                 <div class="meta-eyebrow">Hangar</div>
                 <div class="meta-title" id="meta-aircraft-name">Falcon Mk.I</div>
                 <div class="meta-copy" id="meta-aircraft-copy">Caza de inicio equilibrado para exploración, aterrizajes y rutas de fuel.</div>
@@ -1059,7 +1408,7 @@
                 </div>
             </div>
 
-            <div class="meta-panel">
+                <div class="meta-panel is-hidden" data-meta-section="world">
                 <div class="meta-eyebrow">Mundo</div>
                 <div class="meta-title" id="meta-world-name">Frontier Reach</div>
                 <div class="meta-copy" id="meta-world-copy">Praderas abiertas y rutas amplias para aprender el vuelo base.</div>
@@ -1070,7 +1419,7 @@
                 </div>
             </div>
 
-            <div class="meta-panel">
+                <div class="meta-panel is-hidden" data-meta-section="workshop">
                 <div class="meta-eyebrow">Workshop</div>
                 <div class="meta-currency">
                     <div class="meta-pill" id="meta-credits-pill">Créditos: 0</div>
@@ -1093,19 +1442,25 @@
                 </div>
             </div>
 
-            <div class="meta-panel">
+                <div class="meta-panel is-hidden" data-meta-section="missions">
                 <div class="meta-eyebrow">Mission Board</div>
                 <div class="meta-list" id="meta-mission-board"></div>
             </div>
 
-            <div class="meta-panel">
+                <div class="meta-panel is-hidden" data-meta-section="discovery">
                 <div class="meta-eyebrow">Discovery Log</div>
                 <div class="meta-list" id="meta-discovery-log"></div>
             </div>
+            </div>
         </div>
-        <div class="start-actions">
-            <button id="start-btn">INICIAR VUELO</button>
-            <div class="controls-hint">Controles: WASD o flechas. En móvil, arrastra sobre la pantalla para pilotar. Tu meta es viajar lo más lejos posible mientras completas misiones encadenadas.</div>
+        <div class="menu-dock">
+            <div class="menu-shortcuts">
+                <button type="button" class="menu-shortcut-btn" data-meta-target="hangar"><span class="menu-shortcut-icon">✈</span><span class="menu-shortcut-label">Avion</span><span class="shortcut-badge" id="menu-badge-hangar">!</span></button>
+                <button type="button" class="menu-shortcut-btn" data-meta-target="world"><span class="menu-shortcut-icon">◎</span><span class="menu-shortcut-label">Mundo</span><span class="shortcut-badge" id="menu-badge-world">!</span></button>
+                <button type="button" class="menu-shortcut-btn" data-meta-target="workshop"><span class="menu-shortcut-icon">⬢</span><span class="menu-shortcut-label">Taller</span><span class="shortcut-badge" id="menu-badge-workshop">!</span></button>
+                <button type="button" class="menu-shortcut-btn" data-meta-target="missions"><span class="menu-shortcut-icon">★</span><span class="menu-shortcut-label">Misiones</span><span class="shortcut-badge" id="menu-badge-missions">!</span></button>
+                <button type="button" class="menu-shortcut-btn" data-meta-target="discovery"><span class="menu-shortcut-icon">◇</span><span class="menu-shortcut-label">Registro</span><span class="shortcut-badge" id="menu-badge-discovery">!</span></button>
+            </div>
         </div>
     </div>
 
@@ -1396,11 +1751,115 @@
             }
         };
 
+        const LEVEL_THEME_LIBRARY = {
+            emerald_plains: {
+                id: "emerald_plains",
+                displayName: "Emerald Plains",
+                skyColor: 0x87ceeb,
+                groundColor: 0x2f9a42,
+                fogNear: 100,
+                fogFar: 920,
+                propsLarge: ["mesetas de roca suave", "acantilados bajos", "molinos de viento"],
+                propsSmall: ["arbustos", "setas", "rocas redondeadas", "flores amarillas"]
+            },
+            ember_badlands: {
+                id: "ember_badlands",
+                displayName: "Ember Badlands",
+                skyColor: 0xe0b37b,
+                groundColor: 0x8b6a2d,
+                fogNear: 110,
+                fogFar: 760,
+                propsLarge: ["cañones rojos", "chimeneas geológicas", "torres oxidadas"],
+                propsSmall: ["piedras angulosas", "matorral seco", "escombros metálicos", "cristales ocres"]
+            },
+            frost_tundra: {
+                id: "frost_tundra",
+                displayName: "Frost Tundra",
+                skyColor: 0xb7d5f4,
+                groundColor: 0xdde8ef,
+                fogNear: 90,
+                fogFar: 780,
+                propsLarge: ["placas de hielo", "acantilados nevados", "torres de antena"],
+                propsSmall: ["pinos helados", "bloques de nieve", "carámbanos", "rocas grises"]
+            },
+            neon_coast: {
+                id: "neon_coast",
+                displayName: "Neon Coast",
+                skyColor: 0x72c7ff,
+                groundColor: 0x3f8f6d,
+                fogNear: 105,
+                fogFar: 860,
+                propsLarge: ["arcos de coral gigante", "plataformas oceánicas", "faros futuristas"],
+                propsSmall: ["palmeras", "boyas", "rocas marinas", "carcasas náuticas"]
+            },
+            obsidian_ridge: {
+                id: "obsidian_ridge",
+                displayName: "Obsidian Ridge",
+                skyColor: 0x4f5870,
+                groundColor: 0x262a33,
+                fogNear: 120,
+                fogFar: 700,
+                propsLarge: ["columnas volcánicas", "anillos de basalto", "torres industriales"],
+                propsSmall: ["escoria", "grietas brillantes", "rocas negras", "balizas rojas"]
+            },
+            golden_dunes: {
+                id: "golden_dunes",
+                displayName: "Golden Dunes",
+                skyColor: 0xf0cb8c,
+                groundColor: 0xd1a65e,
+                fogNear: 110,
+                fogFar: 820,
+                propsLarge: ["dunas altas", "arcos de piedra", "ruinas enterradas"],
+                propsSmall: ["hierba desértica", "rocas pulidas", "columnas partidas", "señales antiguas"]
+            },
+            moss_ruins: {
+                id: "moss_ruins",
+                displayName: "Moss Ruins",
+                skyColor: 0x7cb1a7,
+                groundColor: 0x4f7c52,
+                fogNear: 95,
+                fogFar: 760,
+                propsLarge: ["templos colapsados", "puentes de piedra", "árboles gigantes"],
+                propsSmall: ["lianas", "ruinas menores", "linternas de piedra", "helechos"]
+            },
+            crimson_isles: {
+                id: "crimson_isles",
+                displayName: "Crimson Isles",
+                skyColor: 0xcf7f92,
+                groundColor: 0x8a3f55,
+                fogNear: 115,
+                fogFar: 740,
+                propsLarge: ["islas flotantes", "pilares magmáticos", "puentes suspendidos"],
+                propsSmall: ["cristales rojos", "esporas", "peñascos", "balizas antiguas"]
+            },
+            storm_plateau: {
+                id: "storm_plateau",
+                displayName: "Storm Plateau",
+                skyColor: 0x76839b,
+                groundColor: 0x566272,
+                fogNear: 120,
+                fogFar: 680,
+                propsLarge: ["mesetas cortadas", "pararrayos", "torres de radar"],
+                propsSmall: ["cajas técnicas", "postes", "piedras mojadas", "cables rotos"]
+            },
+            aurora_highlands: {
+                id: "aurora_highlands",
+                displayName: "Aurora Highlands",
+                skyColor: 0x8aa4ff,
+                groundColor: 0x5168b2,
+                fogNear: 100,
+                fogFar: 860,
+                propsLarge: ["crestas brillantes", "anillos de energía", "observatorios"],
+                propsSmall: ["fragmentos lumínicos", "rocas azules", "marcadores", "flora bioluminiscente"]
+            }
+        };
+
         const WORLD_PROFILES = {
             frontier_reach: {
                 id: "frontier_reach",
                 displayName: "Frontier Reach",
                 blurb: "Praderas abiertas y geometría amable para aprender el lenguaje base del vuelo arcade.",
+                themeId: "emerald_plains",
                 visualTheme: {
                     skyColor: 0x87ceeb,
                     fogNear: 100,
@@ -1418,6 +1877,7 @@
                 id: "ember_vale",
                 displayName: "Ember Vale",
                 blurb: "Terreno más áspero, menos fuel de apoyo y un tono más hostil para pilotos que ya dominan el aterrizaje.",
+                themeId: "ember_badlands",
                 visualTheme: {
                     skyColor: 0xe0b37b,
                     fogNear: 110,
@@ -1429,6 +1889,150 @@
                 featuredChallenges: ["Ruta dorada estrecha", "Impacto de convoy pesado", "Exploración de valle"],
                 environmentModifiers: {
                     supportFuelCap: 6
+                }
+            },
+            frostline_expanses: {
+                id: "frostline_expanses",
+                displayName: "Frostline Expanses",
+                blurb: "Planicies heladas con visibilidad limpia y rutas largas para mantener velocidad sostenida.",
+                themeId: "frost_tundra",
+                visualTheme: {
+                    skyColor: 0xb7d5f4,
+                    fogNear: 90,
+                    fogFar: 820,
+                    groundColor: 0xdde8ef,
+                    gridOpacity: 0.12
+                },
+                missionPool: ["letters", "statuettes", "puzzle", "trucks"],
+                featuredChallenges: ["Cadena de balizas frías", "Ruta de reliquias glaciares", "Convoy en ventisca"],
+                environmentModifiers: {
+                    supportFuelCap: 7
+                }
+            },
+            neon_tide: {
+                id: "neon_tide",
+                displayName: "Neon Tide",
+                blurb: "Costa brillante con rutas amplias y objetivos muy legibles sobre el horizonte marino.",
+                themeId: "neon_coast",
+                visualTheme: {
+                    skyColor: 0x72c7ff,
+                    fogNear: 105,
+                    fogFar: 860,
+                    groundColor: 0x3f8f6d,
+                    gridOpacity: 0.16
+                },
+                missionPool: ["statuettes", "trucks", "letters", "puzzle"],
+                featuredChallenges: ["Anillos sobre arrecifes", "Intercepta convoy costero", "Colección de boyas antiguas"],
+                environmentModifiers: {
+                    supportFuelCap: 7
+                }
+            },
+            obsidian_spine: {
+                id: "obsidian_spine",
+                displayName: "Obsidian Spine",
+                blurb: "Cordillera oscura y agresiva con ventanas de vuelo más cerradas y riesgo constante.",
+                themeId: "obsidian_ridge",
+                visualTheme: {
+                    skyColor: 0x4f5870,
+                    fogNear: 120,
+                    fogFar: 700,
+                    groundColor: 0x262a33,
+                    gridOpacity: 0.12
+                },
+                missionPool: ["trucks", "puzzle", "letters", "statuettes"],
+                featuredChallenges: ["Cruce de agujas negras", "Skid industrial", "Circuito de torres volcánicas"],
+                environmentModifiers: {
+                    supportFuelCap: 5
+                }
+            },
+            sunscar_dunes: {
+                id: "sunscar_dunes",
+                displayName: "Sunscar Dunes",
+                blurb: "Dunas altas y térmicas impredecibles donde cada descenso debe planearse con antelación.",
+                themeId: "golden_dunes",
+                visualTheme: {
+                    skyColor: 0xf0cb8c,
+                    fogNear: 110,
+                    fogFar: 800,
+                    groundColor: 0xd1a65e,
+                    gridOpacity: 0.14
+                },
+                missionPool: ["puzzle", "letters", "statuettes", "trucks"],
+                featuredChallenges: ["Ruta entre arcos de arena", "Piezas enterradas", "Convoy nómada"],
+                environmentModifiers: {
+                    supportFuelCap: 6
+                }
+            },
+            verdant_relics: {
+                id: "verdant_relics",
+                displayName: "Verdant Relics",
+                blurb: "Ruinas cubiertas por vegetación densa, ideal para vuelo técnico y trazados cortos.",
+                themeId: "moss_ruins",
+                visualTheme: {
+                    skyColor: 0x7cb1a7,
+                    fogNear: 95,
+                    fogFar: 760,
+                    groundColor: 0x4f7c52,
+                    gridOpacity: 0.15
+                },
+                missionPool: ["letters", "puzzle", "statuettes", "trucks"],
+                featuredChallenges: ["Atlas de templos", "Cadena de puentes", "Recuperación de convoy perdido"],
+                environmentModifiers: {
+                    supportFuelCap: 6
+                }
+            },
+            crimson_archipelago: {
+                id: "crimson_archipelago",
+                displayName: "Crimson Archipelago",
+                blurb: "Islas partidas y pasos verticales con excelente lectura de profundidad y riesgo alto.",
+                themeId: "crimson_isles",
+                visualTheme: {
+                    skyColor: 0xcf7f92,
+                    fogNear: 115,
+                    fogFar: 740,
+                    groundColor: 0x8a3f55,
+                    gridOpacity: 0.13
+                },
+                missionPool: ["trucks", "letters", "puzzle", "statuettes"],
+                featuredChallenges: ["Ruta de islas flotantes", "Colección de cristales carmesí", "Convoy entre pilares"],
+                environmentModifiers: {
+                    supportFuelCap: 5
+                }
+            },
+            thunder_plate: {
+                id: "thunder_plate",
+                displayName: "Thunder Plate",
+                blurb: "Meseta de tormenta con visión corta y navegación exigente por corredores industriales.",
+                themeId: "storm_plateau",
+                visualTheme: {
+                    skyColor: 0x76839b,
+                    fogNear: 120,
+                    fogFar: 680,
+                    groundColor: 0x566272,
+                    gridOpacity: 0.12
+                },
+                missionPool: ["puzzle", "trucks", "letters", "statuettes"],
+                featuredChallenges: ["Circuito de radares", "Entrega en vendaval", "Skid en pista mojada"],
+                environmentModifiers: {
+                    supportFuelCap: 5
+                }
+            },
+            aurora_crown: {
+                id: "aurora_crown",
+                displayName: "Aurora Crown",
+                blurb: "Región final de gran altitud con siluetas luminosas y rutas de exploración avanzadas.",
+                themeId: "aurora_highlands",
+                visualTheme: {
+                    skyColor: 0x8aa4ff,
+                    fogNear: 100,
+                    fogFar: 860,
+                    groundColor: 0x5168b2,
+                    gridOpacity: 0.13
+                },
+                missionPool: ["letters", "statuettes", "trucks", "puzzle"],
+                featuredChallenges: ["Ruta auroral completa", "Convoy de altura", "Exploración de crestas energéticas"],
+                environmentModifiers: {
+                    supportFuelCap: 4
                 }
             }
         };
@@ -1523,6 +2127,8 @@
         let climbSpeedPenalty = FLIGHT_TUNING.climbSpeedPenalty;
         let diveSpeedBoost = FLIGHT_TUNING.diveSpeedBoost;
         let cameraMode = "arcade";
+        let cameraBankMaxAngle = THREE.MathUtils.degToRad(4);
+        let currentCameraBank = 0;
         let landingAssistTimer = 0;
         let landingGearDeploy = 0;
         let landingMaxSpeed = FLIGHT_TUNING.landing.maxSpeed;
@@ -1542,7 +2148,6 @@
         let maxFlightSpeed = FLIGHT_TUNING.maxSpeed;
         let skidDeceleration = FLIGHT_TUNING.skidDeceleration;
         let landingRolloutDeceleration = FLIGHT_TUNING.landingRolloutDeceleration;
-
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
         let shipVelocity = new THREE.Vector3();
         let targetRotation = new THREE.Vector2(0, 0);
@@ -1551,6 +2156,7 @@
         let saveState = null;
         let currentAircraftProfile = null;
         let currentWorldProfile = null;
+        let activeMetaSection = null;
         const endSequence = {
             active: false,
             result: "skid",
@@ -1591,6 +2197,8 @@
         const uiClimbDragVal = document.getElementById("climb-drag-val");
         const uiDiveBoostSlider = document.getElementById("dive-boost-slider");
         const uiDiveBoostVal = document.getElementById("dive-boost-val");
+        const uiCameraBankSlider = document.getElementById("camera-bank-slider");
+        const uiCameraBankVal = document.getElementById("camera-bank-val");
         const uiCameraModeToggle = document.getElementById("camera-mode-toggle");
         const uiTouchIndicator = document.getElementById("touch-indicator");
         const uiSettingsPanel = document.getElementById("settings-panel");
@@ -1606,6 +2214,11 @@
         const uiMetaCredits = document.getElementById("meta-credits-pill");
         const uiMetaDiscovery = document.getElementById("meta-discovery-pill");
         const uiMetaParts = document.getElementById("meta-parts-pill");
+        const uiStartLoadoutAircraft = document.getElementById("start-loadout-aircraft");
+        const uiStartLoadoutWorld = document.getElementById("start-loadout-world");
+        const uiStartCredits = document.getElementById("start-credits-pill");
+        const uiStartDiscovery = document.getElementById("start-discovery-pill");
+        const uiStartParts = document.getElementById("start-parts-pill");
         const uiUpgradeFuelCopy = document.getElementById("upgrade-fuel-copy");
         const uiUpgradeControlCopy = document.getElementById("upgrade-control-copy");
         const uiUpgradeLandingCopy = document.getElementById("upgrade-landing-copy");
@@ -1616,6 +2229,13 @@
         const uiAircraftNextBtn = document.getElementById("aircraft-next-btn");
         const uiWorldPrevBtn = document.getElementById("world-prev-btn");
         const uiWorldNextBtn = document.getElementById("world-next-btn");
+        const uiMetaSectionButtons = Array.from(document.querySelectorAll(".menu-shortcut-btn"));
+        const uiMetaSectionPanels = Array.from(document.querySelectorAll(".meta-panel[data-meta-section]"));
+        const uiMenuBadgeHangar = document.getElementById("menu-badge-hangar");
+        const uiMenuBadgeWorld = document.getElementById("menu-badge-world");
+        const uiMenuBadgeWorkshop = document.getElementById("menu-badge-workshop");
+        const uiMenuBadgeMissions = document.getElementById("menu-badge-missions");
+        const uiMenuBadgeDiscovery = document.getElementById("menu-badge-discovery");
 
         const missionState = {
             sequenceIndex: 0,
@@ -1650,6 +2270,12 @@
             uiDiveBoostVal.innerText = diveSpeedBoost.toFixed(0);
         });
 
+        uiCameraBankSlider.addEventListener("input", (event) => {
+            const bankDegrees = parseFloat(event.target.value);
+            cameraBankMaxAngle = THREE.MathUtils.degToRad(bankDegrees);
+            uiCameraBankVal.innerText = bankDegrees.toFixed(1);
+        });
+
         uiCameraModeToggle.addEventListener("click", () => {
             cameraMode = cameraMode === "arcade" ? "combat" : "arcade";
             uiCameraModeToggle.innerText = cameraMode === "arcade" ? "Camara: Arcade Horizon" : "Camara: Ace Combat";
@@ -1669,6 +2295,33 @@
 
         function makeFlightEuler(pitch = flightState.pitch, yaw = flightState.yaw, roll = 0) {
             return new THREE.Euler(pitch, yaw, roll, "YXZ");
+        }
+
+        function setActiveMetaSection(sectionId) {
+            activeMetaSection = sectionId || null;
+            uiMetaSectionButtons.forEach((button) => {
+                const isActive = button.dataset.metaTarget === activeMetaSection;
+                button.classList.toggle("active", isActive);
+            });
+            uiMetaSectionPanels.forEach((panel) => {
+                const isActive = panel.dataset.metaSection === activeMetaSection;
+                panel.classList.toggle("is-hidden", !isActive);
+            });
+        }
+
+        function setMenuBadge(target, count, fallbackText = "!") {
+            if (!target) return;
+            if (count > 0) {
+                target.innerText = count > 9 ? "9+" : `${count}`;
+                target.classList.add("show");
+                return;
+            }
+            if (count < 0) {
+                target.innerText = fallbackText;
+                target.classList.add("show");
+                return;
+            }
+            target.classList.remove("show");
         }
 
         function deepClone(value) {
@@ -1717,6 +2370,10 @@
             return WORLD_PROFILES[saveState.selectedWorldId] || WORLD_PROFILES.frontier_reach;
         }
 
+        function getWorldTheme(profile = getSelectedWorldProfile()) {
+            return LEVEL_THEME_LIBRARY[profile.themeId] || null;
+        }
+
         function getUpgradeLevel(id) {
             return saveState.upgrades[id] || 0;
         }
@@ -1763,11 +2420,16 @@
 
         function applyWorldTheme(profile) {
             if (!scene || !groundPlane || !groundGrid) return;
-            const theme = profile.visualTheme;
-            scene.background = new THREE.Color(theme.skyColor);
-            scene.fog = new THREE.Fog(theme.skyColor, theme.fogNear, theme.fogFar);
-            groundPlane.material.color.setHex(theme.groundColor);
-            groundGrid.material.opacity = theme.gridOpacity;
+            const visual = profile.visualTheme;
+            const levelTheme = getWorldTheme(profile);
+            const skyColor = levelTheme?.skyColor ?? visual.skyColor;
+            const groundColor = levelTheme?.groundColor ?? visual.groundColor;
+            const fogNear = levelTheme?.fogNear ?? visual.fogNear;
+            const fogFar = levelTheme?.fogFar ?? visual.fogFar;
+            scene.background = new THREE.Color(skyColor);
+            scene.fog = new THREE.Fog(skyColor, fogNear, fogFar);
+            groundPlane.material.color.setHex(groundColor);
+            groundGrid.material.opacity = visual.gridOpacity;
         }
 
         function applySelectedLoadout() {
@@ -1848,6 +2510,7 @@
             const aircraft = currentAircraftProfile;
             const world = currentWorldProfile;
             const stats = getAircraftStats(aircraft);
+            const levelTheme = getWorldTheme(world);
 
             uiMetaAircraftName.innerText = aircraft.displayName;
             uiMetaAircraftCopy.innerText = aircraft.blurb;
@@ -1864,7 +2527,7 @@
                 { label: "Fuel apoyo", value: `${world.environmentModifiers.supportFuelCap}` },
                 { label: "Misiones", value: `${world.missionPool.length}` },
                 { label: "Fog far", value: `${world.visualTheme.fogFar}` },
-                { label: "Tema", value: `#${world.visualTheme.groundColor.toString(16)}` }
+                { label: "Tema", value: levelTheme?.displayName || "Base" }
             ]);
 
             uiMetaMissionBoard.innerHTML = world.featuredChallenges.map((entry, index) => `<span><strong>${index + 1}. ${entry}</strong><em>${missionDefs[index % missionDefs.length].title}</em></span>`).join("");
@@ -1879,6 +2542,11 @@
             uiMetaCredits.innerText = `Créditos: ${saveState.currencies.credits}`;
             uiMetaDiscovery.innerText = `Discovery: ${saveState.currencies.discovery}`;
             uiMetaParts.innerText = `Parts: ${saveState.currencies.parts}`;
+            uiStartLoadoutAircraft.innerText = aircraft.displayName;
+            uiStartLoadoutWorld.innerText = world.displayName;
+            uiStartCredits.innerText = `Créditos: ${saveState.currencies.credits}`;
+            uiStartDiscovery.innerText = `Discovery: ${saveState.currencies.discovery}`;
+            uiStartParts.innerText = `Parts: ${saveState.currencies.parts}`;
 
             const fuelLevel = getUpgradeLevel("fuel_tank");
             const controlLevel = getUpgradeLevel("control_linkage");
@@ -1890,6 +2558,36 @@
             uiUpgradeFuelBtn.disabled = fuelLevel >= UPGRADE_DEFS.fuel_tank.maxLevel || saveState.currencies.credits < (UPGRADE_DEFS.fuel_tank.costByLevel[fuelLevel] ?? Infinity);
             uiUpgradeControlBtn.disabled = controlLevel >= UPGRADE_DEFS.control_linkage.maxLevel || saveState.currencies.credits < (UPGRADE_DEFS.control_linkage.costByLevel[controlLevel] ?? Infinity);
             uiUpgradeLandingBtn.disabled = landingLevel >= UPGRADE_DEFS.landing_suite.maxLevel || saveState.currencies.credits < (UPGRADE_DEFS.landing_suite.costByLevel[landingLevel] ?? Infinity);
+
+            const upgradeButtons = [uiUpgradeFuelBtn, uiUpgradeControlBtn, uiUpgradeLandingBtn];
+            const affordableUpgrades = upgradeButtons.reduce((count, button) => count + (button.disabled ? 0 : 1), 0);
+            const lockedAircraft = getAircraftIds().length - saveState.unlockedAircraftIds.length;
+            const lockedWorlds = getWorldIds().length - saveState.unlockedWorldIds.length;
+
+            setMenuBadge(uiMenuBadgeWorkshop, affordableUpgrades);
+            setMenuBadge(uiMenuBadgeHangar, lockedAircraft > 0 ? -1 : 0);
+            setMenuBadge(uiMenuBadgeWorld, lockedWorlds > 0 ? -1 : 0);
+            setMenuBadge(uiMenuBadgeMissions, -1, "!");
+            setMenuBadge(uiMenuBadgeDiscovery, saveState.records.bestDistance > 0 ? -1 : 0);
+        }
+
+        function updateWorldUnlocksFromDistance() {
+            const thresholds = [
+                ["ember_vale", 2200],
+                ["frostline_expanses", 2800],
+                ["neon_tide", 3400],
+                ["obsidian_spine", 4000],
+                ["sunscar_dunes", 4700],
+                ["verdant_relics", 5400],
+                ["crimson_archipelago", 6100],
+                ["thunder_plate", 6800],
+                ["aurora_crown", 7600]
+            ];
+            for (const [worldId, distance] of thresholds) {
+                if (saveState.records.bestDistance >= distance && !saveState.unlockedWorldIds.includes(worldId)) {
+                    saveState.unlockedWorldIds.push(worldId);
+                }
+            }
         }
 
         function awardRunRewards(result) {
@@ -1912,9 +2610,7 @@
             if (saveState.records.bestDistance >= 1500 && !saveState.unlockedAircraftIds.includes("swift_scout")) {
                 saveState.unlockedAircraftIds.push("swift_scout");
             }
-            if (saveState.records.bestDistance >= 2200 && !saveState.unlockedWorldIds.includes("ember_vale")) {
-                saveState.unlockedWorldIds.push("ember_vale");
-            }
+            updateWorldUnlocksFromDistance();
             saveProgress();
         }
 
@@ -1965,6 +2661,8 @@
                 endSequence.active = false;
                 screenGameOver.classList.add("hidden");
                 screenStart.classList.remove("hidden");
+                document.body.classList.add("menu-view");
+                setActiveMetaSection(null);
                 refreshMetaUi();
             });
             uiAircraftPrevBtn.addEventListener("click", () => cycleSelection("aircraft", -1));
@@ -1974,8 +2672,16 @@
             uiUpgradeFuelBtn.addEventListener("click", () => purchaseUpgrade("fuel_tank"));
             uiUpgradeControlBtn.addEventListener("click", () => purchaseUpgrade("control_linkage"));
             uiUpgradeLandingBtn.addEventListener("click", () => purchaseUpgrade("landing_suite"));
+            uiMetaSectionButtons.forEach((button) => {
+                button.addEventListener("click", () => {
+                    const nextSection = button.dataset.metaTarget;
+                    setActiveMetaSection(activeMetaSection === nextSection ? null : nextSection);
+                });
+            });
 
             refreshMetaUi();
+            document.body.classList.add("menu-view");
+            setActiveMetaSection(null);
 
             animate();
         }
@@ -2352,36 +3058,54 @@
         function createSceneryObject(chunkIndex) {
             const baseZ = -(chunkIndex * chunkDepth) - 200;
             const localCount = 4 + (chunkIndex % 3);
+            const levelTheme = getWorldTheme(currentWorldProfile);
+            const propsLarge = levelTheme?.propsLarge || [];
+            const propsSmall = levelTheme?.propsSmall || [];
+            const skyTone = new THREE.Color(levelTheme?.skyColor ?? currentWorldProfile.visualTheme.skyColor);
+            const groundTone = new THREE.Color(levelTheme?.groundColor ?? currentWorldProfile.visualTheme.groundColor);
+            const propDark = groundTone.clone().multiplyScalar(0.55);
+            const propMid = groundTone.clone().lerp(skyTone, 0.3);
+            const propBright = skyTone.clone().lerp(new THREE.Color(0xffffff), 0.25);
 
             for (let i = 0; i < localCount; i++) {
                 const x = -280 + (((i * 97) + chunkIndex * 43) % 560);
                 const z = baseZ - i * 30 - ((chunkIndex * 19) % 60);
-                const type = ((chunkIndex * 7) + i) % 10;
+                const typeSeed = ((chunkIndex * 7) + i) % 10;
+                const sizeSeed = (chunkIndex + i) % 4;
                 const group = new THREE.Group();
 
-                if (type < 5) {
-                    const trunk = new THREE.Mesh(treeTrunkGeom, treeTrunkMat);
+                if (typeSeed < 5) {
+                    const trunk = new THREE.Mesh(treeTrunkGeom, treeTrunkMat.clone());
                     trunk.position.y = 2;
                     trunk.castShadow = true;
-                    const leaves = new THREE.Mesh(treeLeavesGeom, treeLeavesMat);
+                    trunk.material.color.copy(propDark);
+                    const leaves = new THREE.Mesh(treeLeavesGeom, treeLeavesMat.clone());
                     leaves.position.y = 8;
                     leaves.castShadow = true;
+                    leaves.material.color.copy(propMid);
                     group.add(trunk, leaves);
-                } else if (type < 8) {
-                    const base = new THREE.Mesh(houseBaseGeom, houseBaseMat);
+                    group.userData.propRole = propsSmall[sizeSeed % Math.max(1, propsSmall.length)] || "small_prop";
+                    group.scale.setScalar(0.75 + (sizeSeed * 0.08));
+                } else if (typeSeed < 8) {
+                    const base = new THREE.Mesh(houseBaseGeom, houseBaseMat.clone());
                     base.position.y = 3;
                     base.castShadow = true;
-                    const roof = new THREE.Mesh(houseRoofGeom, houseRoofMat);
+                    base.material.color.copy(propMid);
+                    const roof = new THREE.Mesh(houseRoofGeom, houseRoofMat.clone());
                     roof.position.y = 8;
                     roof.castShadow = true;
+                    roof.material.color.copy(propBright);
                     group.add(base, roof);
+                    group.userData.propRole = propsSmall[(sizeSeed + 1) % Math.max(1, propsSmall.length)] || "small_prop";
                 } else {
-                    const mountain = new THREE.Mesh(mountainGeom, mountainMat);
+                    const mountain = new THREE.Mesh(mountainGeom, mountainMat.clone());
                     const scale = 1 + ((chunkIndex + i) % 3) * 0.7;
                     mountain.position.y = 18 + ((chunkIndex + i) % 4) * 6;
                     mountain.scale.set(scale, scale, scale);
                     mountain.castShadow = true;
+                    mountain.material.color.copy(propDark);
                     group.add(mountain);
+                    group.userData.propRole = propsLarge[(sizeSeed + 2) % Math.max(1, propsLarge.length)] || "large_prop";
                 }
 
                 group.position.set(x, 0, z);
@@ -2413,6 +3137,7 @@
             applySelectedLoadout();
             screenStart.classList.add("hidden");
             screenGameOver.classList.add("hidden");
+            document.body.classList.remove("menu-view");
             uiStallWarning.style.display = "none";
             uiSettingsPanel.classList.remove("open");
             uiSettingsButton.innerText = "+";
@@ -3596,6 +4321,16 @@
                 lookTarget = playerShip.position.clone().add(new THREE.Vector3(0, 0, -50).applyEuler(makeFlightEuler(0, flightState.yaw, 0)));
             }
             camera.lookAt(lookTarget);
+
+            const canUseArcadeBank = cameraMode === "arcade" && !isGliding && !isSkidding && !isControlledLanding;
+            if (canUseArcadeBank && cameraBankMaxAngle > 0) {
+                const normalizedRoll = THREE.MathUtils.clamp(flightState.roll / (Math.PI / 4), -1, 1);
+                const targetCameraBank = normalizedRoll * cameraBankMaxAngle;
+                currentCameraBank = THREE.MathUtils.lerp(currentCameraBank, targetCameraBank, delta * 5);
+            } else {
+                currentCameraBank = THREE.MathUtils.lerp(currentCameraBank, 0, delta * 6);
+            }
+            camera.rotateZ(currentCameraBank);
 
             if (shakeIntensity > 0) {
                 camera.position.x += (Math.random() - 0.5) * shakeIntensity;
