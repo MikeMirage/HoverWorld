@@ -472,6 +472,114 @@
             padding: 24px;
         }
 
+        #start-screen {
+            justify-content: flex-start;
+            gap: 12px;
+            background: linear-gradient(180deg, rgba(2, 12, 20, 0.2) 0%, rgba(2, 12, 20, 0.3) 62%, rgba(2, 12, 20, 0.75) 100%);
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: 0;
+        }
+
+        #start-screen h1,
+        #start-screen .subtitle,
+        #start-screen .controls-hint {
+            text-shadow: 0 0 14px rgba(0, 0, 0, 0.75);
+        }
+
+        #start-screen .subtitle {
+            font-size: clamp(14px, 2.2vw, 17px);
+            color: #d7e4ef;
+            max-width: min(740px, 90vw);
+            margin-bottom: 0;
+        }
+
+        .start-topbar {
+            width: min(980px, 94vw);
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .start-loadout {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(8, 18, 28, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            text-align: left;
+        }
+
+        .start-loadout strong {
+            font-size: 14px;
+            color: #ffffff;
+        }
+
+        .start-loadout span {
+            font-size: 12px;
+            color: #c6d5e1;
+        }
+
+        .start-currencies {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .start-currencies .meta-pill {
+            min-height: 28px;
+            padding: 5px 9px;
+            font-size: 11px;
+        }
+
+        .start-hero {
+            width: min(980px, 94vw);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding-top: 8px;
+            text-align: center;
+        }
+
+        .start-hero-copy {
+            max-width: 420px;
+            color: #d2deea;
+            font-size: 14px;
+            line-height: 1.35;
+        }
+
+        #start-btn.start-primary-cta {
+            min-height: 58px;
+            min-width: min(360px, 86vw);
+            border-radius: 16px;
+            letter-spacing: 0.04em;
+            font-size: 24px;
+            background: linear-gradient(180deg, #2fcbff 0%, #0b89f4 100%);
+            box-shadow: 0 14px 30px rgba(6, 132, 231, 0.45);
+        }
+
+        body.menu-view .hud-top,
+        body.menu-view #hud-power,
+        body.menu-view #hud-angle,
+        body.menu-view #hud-descent,
+        body.menu-view #settings-panel,
+        body.menu-view #settings-button,
+        body.menu-view #minimap-container {
+            display: none !important;
+        }
+
+        #start-screen,
+        #game-over-screen {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+
         .hidden {
             opacity: 0;
             pointer-events: none;
