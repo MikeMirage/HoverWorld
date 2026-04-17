@@ -225,9 +225,29 @@
             font-weight: 700;
         }
 
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-group:last-child {
+            margin-bottom: 0;
+        }
+
         .slider-container input[type="range"] {
             width: 100%;
             accent-color: var(--safe-accent);
+        }
+
+        .camera-toggle {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
         }
 
         .plane-hud-label {
@@ -487,6 +507,8 @@
             .hud-top {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 10px;
+                padding: 12px;
             }
 
             .hud-stack,
@@ -496,19 +518,190 @@
                 min-width: 0;
             }
 
+            .panel {
+                border-radius: 10px;
+            }
+
+            .score-container {
+                padding: 10px 12px;
+                font-size: 15px;
+            }
+
+            .altitude-text,
+            .subtext {
+                font-size: 12px;
+                margin-top: 4px;
+            }
+
+            .mission-panel {
+                padding: 10px 12px 12px;
+            }
+
+            .mission-header {
+                margin-bottom: 6px;
+                font-size: 10px;
+            }
+
+            .mission-title {
+                font-size: 15px;
+                margin-bottom: 4px;
+            }
+
+            .mission-description {
+                font-size: 11px;
+                line-height: 1.3;
+                margin-bottom: 8px;
+            }
+
+            .mission-meta {
+                margin-bottom: 6px;
+                font-size: 11px;
+            }
+
+            .fuel-container {
+                padding: 10px 12px;
+            }
+
+            .fuel-label {
+                margin-bottom: 6px;
+                font-size: 12px;
+            }
+
+            #fuel-status-text {
+                font-size: 0.72em;
+            }
+
+            .fuel-bar-bg,
+            .mission-progress-bg {
+                height: 14px;
+            }
+
             .slider-container {
-                right: 16px;
-                bottom: 16px;
-                width: min(240px, calc(100vw - 32px));
+                right: 12px;
+                bottom: 12px;
+                width: min(200px, calc(100vw - 156px));
+                padding: 10px 12px;
+                border-radius: 10px;
+            }
+
+            .slider-container label {
+                margin-bottom: 6px;
+                font-size: 11px;
+            }
+
+            .slider-group {
+                margin-bottom: 8px;
+            }
+
+            .camera-toggle {
+                padding: 8px 10px;
+                font-size: 11px;
             }
 
             #minimap-container {
-                left: 16px;
-                bottom: 16px;
-                width: 132px;
-                height: 132px;
+                left: 12px;
+                bottom: 12px;
+                width: 108px;
+                height: 108px;
             }
 
+            .map-player {
+                border-left-width: 5px;
+                border-right-width: 5px;
+                border-bottom-width: 11px;
+            }
+
+            .map-dot {
+                width: 6px;
+                height: 6px;
+            }
+
+            .map-dot.mission-truck {
+                width: 8px;
+                height: 8px;
+            }
+
+            .mission-arrow {
+                border-left-width: 6px;
+                border-right-width: 6px;
+                border-bottom-width: 13px;
+            }
+
+            .plane-hud-label,
+            #hud-descent {
+                font-size: 11px;
+            }
+
+            .touch-indicator {
+                width: 92px;
+                height: 92px;
+            }
+
+            .touch-indicator::after {
+                width: 26px;
+                height: 26px;
+            }
+
+            #mission-toast {
+                top: 12%;
+                min-width: 0;
+                width: min(82vw, 320px);
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+
+            .stall-warning {
+                font-size: 32px;
+            }
+
+        }
+
+        @media (max-width: 480px) {
+            .hud-top {
+                padding: 8px;
+                gap: 8px;
+            }
+
+            .score-container {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+
+            .mission-panel,
+            .fuel-container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .mission-title {
+                font-size: 13px;
+            }
+
+            .mission-description {
+                font-size: 10px;
+            }
+
+            .mission-meta,
+            .fuel-label,
+            .altitude-text,
+            .subtext {
+                font-size: 10px;
+            }
+
+            .slider-container {
+                width: min(180px, calc(100vw - 136px));
+                padding: 8px 10px;
+            }
+
+            .slider-container label,
+            .camera-toggle {
+                font-size: 10px;
+            }
+
+            #minimap-container {
+                width: 96px;
+                height: 96px;
+            }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -556,8 +749,21 @@
         <div id="touch-indicator" class="touch-indicator"></div>
 
         <div class="slider-container panel">
-            <label for="glide-duration-slider">Tiempo de Planeo: <span id="glide-duration-val">10.0</span> s</label>
-            <input type="range" id="glide-duration-slider" min="5" max="30" step="1" value="10">
+            <div class="slider-group">
+                <label for="glide-duration-slider">Tiempo de Planeo: <span id="glide-duration-val">10.0</span> s</label>
+                <input type="range" id="glide-duration-slider" min="5" max="30" step="1" value="10">
+            </div>
+            <div class="slider-group">
+                <label for="climb-drag-slider">Pérdida al subir: <span id="climb-drag-val">180</span></label>
+                <input type="range" id="climb-drag-slider" min="60" max="260" step="5" value="180">
+            </div>
+            <div class="slider-group">
+                <label for="dive-boost-slider">Ganancia al bajar: <span id="dive-boost-val">180</span></label>
+                <input type="range" id="dive-boost-slider" min="60" max="260" step="5" value="180">
+            </div>
+            <div class="slider-group">
+                <button type="button" id="camera-mode-toggle" class="camera-toggle">Camara: Arcade Horizon</button>
+            </div>
         </div>
 
         <div id="hud-power" class="plane-hud-label">VEL: 0</div>
@@ -685,6 +891,9 @@
         let bestDiscoveredDistance = 0;
         let letterCursor = 0;
         let lastFuelStatusTimeoutId = null;
+        let climbSpeedPenalty = 180;
+        let diveSpeedBoost = 180;
+        let cameraMode = "arcade";
 
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
         let shipVelocity = new THREE.Vector3();
@@ -718,6 +927,11 @@
         const uiFinalMissionSummary = document.getElementById("final-mission-summary");
         const uiGlideSlider = document.getElementById("glide-duration-slider");
         const uiGlideVal = document.getElementById("glide-duration-val");
+        const uiClimbDragSlider = document.getElementById("climb-drag-slider");
+        const uiClimbDragVal = document.getElementById("climb-drag-val");
+        const uiDiveBoostSlider = document.getElementById("dive-boost-slider");
+        const uiDiveBoostVal = document.getElementById("dive-boost-val");
+        const uiCameraModeToggle = document.getElementById("camera-mode-toggle");
         const uiTouchIndicator = document.getElementById("touch-indicator");
 
         const missionState = {
@@ -741,6 +955,21 @@
         uiGlideSlider.addEventListener("input", (event) => {
             glideDuration = parseFloat(event.target.value);
             uiGlideVal.innerText = glideDuration.toFixed(1);
+        });
+
+        uiClimbDragSlider.addEventListener("input", (event) => {
+            climbSpeedPenalty = parseFloat(event.target.value);
+            uiClimbDragVal.innerText = climbSpeedPenalty.toFixed(0);
+        });
+
+        uiDiveBoostSlider.addEventListener("input", (event) => {
+            diveSpeedBoost = parseFloat(event.target.value);
+            uiDiveBoostVal.innerText = diveSpeedBoost.toFixed(0);
+        });
+
+        uiCameraModeToggle.addEventListener("click", () => {
+            cameraMode = cameraMode === "arcade" ? "combat" : "arcade";
+            uiCameraModeToggle.innerText = cameraMode === "arcade" ? "Camara: Arcade Horizon" : "Camara: Ace Combat";
         });
 
         function init() {
@@ -1727,7 +1956,9 @@
                 }
 
                 const pitchAngle = playerShip.rotation.x;
-                targetSpeed += (-pitchAngle * 180);
+                const climbPenalty = Math.max(0, -pitchAngle) * climbSpeedPenalty;
+                const diveBonus = Math.max(0, pitchAngle) * diveSpeedBoost;
+                targetSpeed += diveBonus - climbPenalty;
                 targetSpeed -= Math.abs(playerShip.rotation.z) * 50;
 
                 if (flightSpeed < STALL_SPEED && stallTimer <= 0) stallTimer = 1;
@@ -1911,11 +2142,21 @@
             }
 
             const cameraOffset = new THREE.Vector3(0, camHeightOffset, camDistanceOffset);
-            cameraOffset.applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0));
+            if (cameraMode === "combat") {
+                cameraOffset.set(0, camHeightOffset - 4, camDistanceOffset - 10);
+                cameraOffset.applyEuler(new THREE.Euler(playerShip.rotation.x * 0.45, playerShip.rotation.y, playerShip.rotation.z * 0.2));
+            } else {
+                cameraOffset.applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0));
+            }
             const targetCameraPos = playerShip.position.clone().add(cameraOffset);
             camera.position.lerp(targetCameraPos, 4 * delta);
 
-            const lookTarget = playerShip.position.clone().add(new THREE.Vector3(0, 0, -50).applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0)));
+            let lookTarget;
+            if (cameraMode === "combat") {
+                lookTarget = playerShip.position.clone().add(new THREE.Vector3(0, 2, -70).applyEuler(new THREE.Euler(playerShip.rotation.x * 0.6, playerShip.rotation.y, 0)));
+            } else {
+                lookTarget = playerShip.position.clone().add(new THREE.Vector3(0, 0, -50).applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0)));
+            }
             camera.lookAt(lookTarget);
 
             if (shakeIntensity > 0) {
