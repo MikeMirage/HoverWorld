@@ -3,17 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HoverWorld - Glide Gamefeel</title>
+    <title>HoverWorld - Open World Missions</title>
     <style>
+        :root {
+            --hud-bg: rgba(0, 10, 18, 0.68);
+            --hud-border: rgba(255, 255, 255, 0.18);
+            --mission-accent: #ffe36a;
+            --danger-accent: #ff5a4f;
+            --safe-accent: #00ffaa;
+        }
+
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #87CEEB;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #87ceeb;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
+            touch-action: none;
         }
-        
-        #game-canvas {
+
+        canvas {
             display: block;
             width: 100vw;
             height: 100vh;
@@ -21,223 +30,318 @@
 
         #ui-layer {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
         .hud-top {
-            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            gap: 18px;
+            padding: 20px;
+        }
+
+        .hud-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 300px;
+        }
+
+        .panel {
+            background: var(--hud-bg);
+            color: #fff;
+            border: 2px solid var(--hud-border);
+            border-radius: 12px;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
         }
 
         .score-container {
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 12px 18px;
             font-size: 24px;
-            font-weight: bold;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
+            font-weight: 700;
         }
 
-        .altitude-text {
-            font-size: 16px;
-            color: #aaa;
-            margin-top: 5px;
-            font-weight: normal;
+        .altitude-text,
+        .subtext {
+            font-size: 15px;
+            color: #aeb8c1;
+            font-weight: 500;
+            margin-top: 6px;
         }
 
         .fuel-container {
-            width: 300px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 10px;
-            border-radius: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            transition: border-color 0.3s;
+            width: 320px;
+            padding: 12px;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .fuel-label {
-            color: white;
-            font-weight: bold;
-            margin-bottom: 5px;
+        .fuel-label,
+        .mission-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .mission-header {
+            color: var(--mission-accent);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 12px;
         }
 
         #fuel-status-text {
             color: #ffaa00;
-            font-size: 0.8em;
+            font-size: 0.78em;
         }
 
-        .fuel-bar-bg {
+        .fuel-bar-bg,
+        .mission-progress-bg {
             width: 100%;
             height: 20px;
-            background: #333;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.09);
+            border-radius: 999px;
             overflow: hidden;
         }
 
-        #fuel-bar-fill {
+        #fuel-bar-fill,
+        #mission-progress-fill {
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, #ff0000, #ffaa00, #00ff00);
-            transition: width 0.1s linear, filter 0.3s;
+            transition: width 0.18s linear, filter 0.25s ease;
+        }
+
+        #fuel-bar-fill {
+            background: linear-gradient(90deg, #ff4a3d 0%, #ffaa00 40%, #8dff6a 100%);
+        }
+
+        #mission-progress-fill {
+            width: 0%;
+            background: linear-gradient(90deg, #ffd04c 0%, #ffe36a 100%);
+            box-shadow: 0 0 20px rgba(255, 227, 106, 0.5);
+        }
+
+        .mission-panel {
+            width: 320px;
+            padding: 12px 14px 14px;
+        }
+
+        .mission-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff7ce;
+            margin-bottom: 6px;
+        }
+
+        .mission-description {
+            color: #d8dee4;
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .mission-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #c8d0d7;
+            font-size: 13px;
+        }
+
+        #mission-reward {
+            color: var(--safe-accent);
+            font-weight: 700;
+        }
+
+        #mission-toast {
+            position: absolute;
+            top: 18%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            min-width: 320px;
+            max-width: min(90vw, 480px);
+            padding: 14px 18px;
+            color: #fff;
+            font-weight: 800;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            background: rgba(0, 0, 0, 0.72);
+            border: 2px solid rgba(255, 227, 106, 0.5);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 25px rgba(255, 227, 106, 0.18);
+            opacity: 0;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            z-index: 120;
+        }
+
+        #mission-toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
         .glide-warning {
-            filter: grayscale(100%) brightness(0.5);
-            background: #888 !important;
+            filter: grayscale(100%) brightness(0.58);
+            background: #858585 !important;
         }
-        
+
         .glide-border {
-            border-color: #ff3333 !important;
-            box-shadow: 0 0 20px rgba(255, 51, 51, 0.8);
-            animation: warningPulse 1s infinite alternate;
+            border-color: var(--danger-accent) !important;
+            box-shadow: 0 0 18px rgba(255, 90, 79, 0.85);
+            animation: warningPulse 0.85s infinite alternate;
         }
 
         @keyframes warningPulse {
-            from { box-shadow: 0 0 10px rgba(255, 51, 51, 0.4); }
-            to { box-shadow: 0 0 30px rgba(255, 51, 51, 1.0); }
+            from { box-shadow: 0 0 10px rgba(255, 90, 79, 0.35); }
+            to { box-shadow: 0 0 28px rgba(255, 90, 79, 0.95); }
         }
 
-        /* Contenedor del Slider */
         .slider-container {
             position: absolute;
-            bottom: 30px;
-            right: 30px;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            display: flex;
-            flex-direction: column;
+            right: 24px;
+            bottom: 24px;
+            width: 250px;
+            padding: 14px 16px;
+            background: var(--hud-bg);
+            color: #fff;
+            border: 2px solid var(--hud-border);
+            border-radius: 12px;
+            backdrop-filter: blur(6px);
             pointer-events: auto;
-            font-size: 14px;
             z-index: 50;
         }
 
         .slider-container label {
+            display: block;
             margin-bottom: 8px;
-            font-weight: bold;
+            font-size: 14px;
+            font-weight: 700;
         }
 
-        .slider-container input[type=range] {
-            width: 200px;
-            cursor: pointer;
-            accent-color: #00ffaa;
+        .slider-container input[type="range"] {
+            width: 100%;
+            accent-color: var(--safe-accent);
         }
 
-        /* --- ESTILOS DEL HUD DEBUG --- */
         .plane-hud-label {
             position: absolute;
-            color: #00ffaa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 14px;
-            font-weight: bold;
+            display: none;
+            color: var(--safe-accent);
             background: rgba(0, 50, 0, 0.4);
             border: 1px solid rgba(0, 255, 170, 0.5);
             padding: 4px 8px;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
             border-radius: 4px;
+            transform: translate(-50%, -50%);
             text-shadow: 0 0 4px #000;
-            transition: color 0.2s, border-color 0.2s;
-            z-index: 20;
-            display: none;
-        }
-        
-        #hud-descent {
-            position: absolute;
-            color: #00ffaa;
-            font-family: monospace;
             font-size: 14px;
-            font-weight: bold;
-            pointer-events: none;
-            transform: translate(15px, -50%);
-            text-shadow: 0px 0px 4px #000;
+            font-weight: 700;
             z-index: 20;
-            display: none;
         }
 
-        /* Minimapa */
+        #hud-descent {
+            position: absolute;
+            display: none;
+            color: var(--safe-accent);
+            transform: translate(15px, -50%);
+            text-shadow: 0 0 4px #000;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 700;
+            z-index: 20;
+        }
+
         #minimap-container {
             position: absolute;
-            bottom: 30px;
-            left: 30px;
-            width: 150px;
-            height: 150px;
+            left: 24px;
+            bottom: 24px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
-            background: rgba(0, 20, 40, 0.6);
+            background: rgba(0, 20, 40, 0.64);
             border: 2px solid rgba(0, 255, 170, 0.4);
             backdrop-filter: blur(4px);
-            pointer-events: none;
             overflow: hidden;
+            pointer-events: none;
             display: none;
             z-index: 10;
         }
+
         #minimap-content {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0; left: 0;
+            inset: 0;
             transform-origin: center;
         }
+
         .map-player {
             position: absolute;
-            top: 50%; left: 50%;
-            width: 0; height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 12px solid #00ffaa;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 14px solid var(--safe-accent);
             transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 4px var(--safe-accent));
             z-index: 10;
-            filter: drop-shadow(0 0 4px #00ffaa);
         }
+
         .map-dot {
             position: absolute;
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #ffaa00;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 4px #ffaa00;
         }
+
+        .map-dot.fuel {
+            background: #00ffaa;
+            box-shadow: 0 0 5px #00ffaa;
+        }
+
+        .map-dot.mission-collect {
+            background: #ffe36a;
+            box-shadow: 0 0 5px #ffe36a;
+        }
+
+        .map-dot.mission-truck {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: #ff5a4f;
+            box-shadow: 0 0 6px #ff5a4f;
+        }
+
         .minimap-overlay {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            inset: 0;
             border-radius: 50%;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.8);
             z-index: 5;
         }
 
-        /* Pantallas de Menú */
         .screen {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            inset: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
+            gap: 12px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.8);
             pointer-events: auto;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s ease;
             z-index: 100;
+            text-align: center;
+            padding: 24px;
         }
 
         .hidden {
@@ -246,37 +350,37 @@
         }
 
         h1 {
-            font-size: 64px;
-            margin: 0 0 10px 0;
+            margin: 0;
+            font-size: clamp(46px, 7vw, 68px);
+            letter-spacing: 0.16em;
             text-transform: uppercase;
-            letter-spacing: 5px;
-            text-shadow: 0 0 20px rgba(0, 150, 255, 0.8);
+            text-shadow: 0 0 24px rgba(0, 160, 255, 0.82);
         }
 
-        p.subtitle {
-            font-size: 20px;
-            color: #ccc;
-            margin-bottom: 40px;
-            text-align: center;
-            max-width: 600px;
+        .subtitle {
+            max-width: 700px;
+            margin: 0 0 18px;
+            color: #d3dbe3;
+            font-size: 19px;
+            line-height: 1.5;
         }
 
         button {
-            padding: 15px 40px;
-            font-size: 24px;
-            font-weight: bold;
-            background: #0088ff;
-            color: white;
+            padding: 15px 38px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #00a4ff 0%, #007ae7 100%);
+            color: #fff;
             cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0, 136, 255, 0.4);
-            transition: transform 0.1s, background 0.2s;
+            font-size: 22px;
+            font-weight: 800;
+            box-shadow: 0 10px 24px rgba(0, 122, 231, 0.35);
+            transition: transform 0.12s ease, background 0.2s ease;
         }
 
         button:hover {
-            background: #00aaff;
             transform: translateY(-2px);
+            background: linear-gradient(180deg, #14b2ff 0%, #0b89f4 100%);
         }
 
         button:active {
@@ -285,47 +389,133 @@
 
         #final-score {
             font-size: 32px;
-            color: #00ffaa;
-            margin-bottom: 30px;
+            color: var(--safe-accent);
+            margin-top: 8px;
         }
-        
+
+        #final-mission-summary {
+            color: #d8dee4;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
         .controls-hint {
-            margin-top: 30px;
-            color: #888;
+            max-width: 360px;
+            color: #8f9aa5;
             font-size: 14px;
+            line-height: 1.4;
         }
-        
+
         .stall-warning {
             position: absolute;
             top: 30%;
             left: 50%;
             transform: translate(-50%, -50%);
+            display: none;
             color: #ff0000;
             font-size: 48px;
             font-weight: 900;
             font-style: italic;
-            text-shadow: 0 0 10px #ff0000;
-            display: none;
+            text-shadow: 0 0 12px #ff0000;
+            animation: pulse 0.22s infinite alternate;
             z-index: 50;
-            animation: pulse 0.2s infinite alternate;
         }
-        
+
         @keyframes pulse {
             from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            to { opacity: 0.3; transform: translate(-50%, -50%) scale(1.1); }
+            to { opacity: 0.3; transform: translate(-50%, -50%) scale(1.08); }
+        }
+
+        .touch-indicator {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            background: radial-gradient(circle, rgba(0, 170, 255, 0.22), rgba(0, 0, 0, 0.08));
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 60;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .touch-indicator.active {
+            opacity: 1;
+        }
+
+        .touch-indicator::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            transform: translate(calc(-50% + var(--knob-x, 0px)), calc(-50% + var(--knob-y, 0px)));
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+        }
+
+        @media (max-width: 900px) {
+            .hud-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .hud-stack,
+            .fuel-container,
+            .mission-panel {
+                width: auto;
+                min-width: 0;
+            }
+
+            .slider-container {
+                right: 16px;
+                bottom: 16px;
+                width: min(240px, calc(100vw - 32px));
+            }
+
+            #minimap-container {
+                left: 16px;
+                bottom: 16px;
+                width: 132px;
+                height: 132px;
+            }
+
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-
     <div id="ui-layer">
         <div class="hud-top">
-            <div class="score-container">
-                <div>Distancia: <span id="score">0</span> m</div>
-                <div class="altitude-text">Altitud: <span id="altitude">0</span> m</div>
+            <div class="hud-stack">
+                <div class="panel score-container">
+                    <div>Distancia: <span id="score">0</span> m</div>
+                    <div class="altitude-text">Altitud: <span id="altitude">0</span> m</div>
+                    <div class="subtext">Mundo descubierto: <span id="discover-distance">0</span> m</div>
+                </div>
+
+                <div class="panel mission-panel" id="mission-panel">
+                    <div class="mission-header">
+                        <span>Misión Activa</span>
+                        <span id="mission-order">1 / 4</span>
+                    </div>
+                    <div class="mission-title" id="mission-title">Recolecta 3 Estatuillas</div>
+                    <div class="mission-description" id="mission-description">Sigue la ruta dorada para empezar a descubrir el mundo.</div>
+                    <div class="mission-meta">
+                        <span id="mission-progress-label">0 / 3</span>
+                        <span id="mission-reward">+25 fuel</span>
+                    </div>
+                    <div class="mission-progress-bg">
+                        <div id="mission-progress-fill"></div>
+                    </div>
+                </div>
             </div>
-            <div class="fuel-container" id="fuel-container-box">
+
+            <div class="panel fuel-container" id="fuel-container-box">
                 <div class="fuel-label">
                     <span>Combustible</span>
                     <span id="fuel-status-text">MOTORES ACTIVOS</span>
@@ -335,21 +525,20 @@
                 </div>
             </div>
         </div>
-        
-        <div id="stall-warning" class="stall-warning">STALL!</div>
 
-        <!-- Slider de tiempo de planeo -->
-        <div class="slider-container">
+        <div id="stall-warning" class="stall-warning">STALL!</div>
+        <div id="mission-toast"></div>
+        <div id="touch-indicator" class="touch-indicator"></div>
+
+        <div class="slider-container panel">
             <label for="glide-duration-slider">Tiempo de Planeo: <span id="glide-duration-val">10.0</span> s</label>
             <input type="range" id="glide-duration-slider" min="5" max="30" step="1" value="10">
         </div>
 
-        <!-- Elementos HUD 2D proyectados -->
         <div id="hud-power" class="plane-hud-label">VEL: 0</div>
         <div id="hud-angle" class="plane-hud-label">ANG: 0º</div>
         <div id="hud-descent">Vy: 0</div>
 
-        <!-- Minimapa -->
         <div id="minimap-container">
             <div id="minimap-content"></div>
             <div class="minimap-overlay"></div>
@@ -359,277 +548,273 @@
 
     <div id="start-screen" class="screen">
         <h1>HoverWorld</h1>
-        <p class="subtitle">Administra tu fuel. Cuando se apague el motor, planea con precisión para exprimir cada metro antes de caer.</p>
+        <p class="subtitle">Descubre cuánta distancia puedes recorrer en un mundo abierto en constante expansión. Cumple misiones consecutivas, recoge reliquias del cielo y aprovecha cada gota de fuel.</p>
         <button id="start-btn">INICIAR VUELO</button>
-        <div class="controls-hint">Controles: WASD o Flechas direccionales</div>
+        <div class="controls-hint">Controles: WASD o flechas. En móvil, arrastra sobre la pantalla para pilotar. Tu meta es viajar lo más lejos posible mientras completas misiones encadenadas.</div>
     </div>
 
     <div id="game-over-screen" class="screen hidden">
         <h1>Aterrizaje Forzoso</h1>
         <div id="final-score">Distancia Total: 0 m</div>
+        <div id="final-mission-summary">Misiones completadas: 0</div>
         <button id="restart-btn">VOLAR DE NUEVO</button>
     </div>
 
     <script>
-        // --- VARIABLES GLOBALES DEL JUEGO ---
         let scene, camera, renderer;
         let playerShip;
         let groundGrid, groundPlane;
-        let fuels = [];
-        
-        // Elementos visuales
         let dropShadow;
-        let dropLine; 
+        let dropLine;
         let windParticles;
+        let engineMesh;
         let sceneryObjects = [];
-        
-        // Efectos Visuales Nuevos (Glide Gamefeel)
         let wingTrails = [];
         let engineSmokeParticles = [];
         let groundDustParticles = [];
-        
-        // Geometrías y Materiales Globales
-        const treeLeavesGeom = new THREE.ConeGeometry(4, 12, 5);
-        const treeLeavesMat = new THREE.MeshStandardMaterial({color: 0x228B22, roughness: 0.8});
-        const treeTrunkGeom = new THREE.CylinderGeometry(1, 1, 4);
-        const treeTrunkMat = new THREE.MeshStandardMaterial({color: 0x5c4033});
-        const houseBaseGeom = new THREE.BoxGeometry(8, 6, 8);
-        const houseBaseMat = new THREE.MeshStandardMaterial({color: 0xe0e0e0});
-        const houseRoofGeom = new THREE.ConeGeometry(7, 4, 4);
-        houseRoofGeom.rotateY(Math.PI/4);
-        const houseRoofMat = new THREE.MeshStandardMaterial({color: 0xcc4444});
-        const mountainGeom = new THREE.ConeGeometry(40, 60, 5);
-        const mountainMat = new THREE.MeshStandardMaterial({color: 0x6e6e6e, roughness: 0.9});
+        let sparkParticles = [];
+        let worldObjects = [];
+        let activeMissionObjects = [];
+        let missionChunkQueue = [];
+        let spawnedChunks = new Set();
+        let missionChunksUsed = new Set();
 
-        // Estado y Variables Scripted
+        const treeLeavesGeom = new THREE.ConeGeometry(4, 12, 5);
+        const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.8 });
+        const treeTrunkGeom = new THREE.CylinderGeometry(1, 1, 4);
+        const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+        const houseBaseGeom = new THREE.BoxGeometry(8, 6, 8);
+        const houseBaseMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0 });
+        const houseRoofGeom = new THREE.ConeGeometry(7, 4, 4);
+        houseRoofGeom.rotateY(Math.PI / 4);
+        const houseRoofMat = new THREE.MeshStandardMaterial({ color: 0xcc4444 });
+        const mountainGeom = new THREE.ConeGeometry(40, 60, 5);
+        const mountainMat = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9 });
+
+        const MISSION_DEFS = [
+            {
+                id: "statuettes",
+                type: "collect",
+                title: "Recolecta 3 Estatuillas",
+                description: "Sigue la primera ruta dorada y recoge las tres estatuillas del aire.",
+                requiredCount: 3,
+                spawnPattern: "arc",
+                targetPrefab: "statuette",
+                reward: { fuel: 25, score: 120, stability: 0 }
+            },
+            {
+                id: "letters",
+                type: "collect",
+                title: "Recoge 5 Letras Doradas",
+                description: "Las letras flotan en distintas líneas. Elige bien tu ruta para atraparlas todas.",
+                requiredCount: 5,
+                spawnPattern: "laneSplit",
+                targetPrefab: "letter",
+                reward: { fuel: 20, score: 180, stability: 1.2 }
+            },
+            {
+                id: "puzzle",
+                type: "collect",
+                title: "Ensambla 7 Piezas",
+                description: "Explora una zona más abierta y encuentra las siete piezas del puzzle repartidas en el cielo.",
+                requiredCount: 7,
+                spawnPattern: "wideSearch",
+                targetPrefab: "puzzle",
+                reward: { fuel: 25, score: 260, stability: 1.6 }
+            },
+            {
+                id: "trucks",
+                type: "crash",
+                title: "Impacta 3 Camiones",
+                description: "Cuando llegue el momento, derrapa sobre los camiones marcados y conviértelos en parte del recorrido.",
+                requiredCount: 3,
+                spawnPattern: "groundCluster",
+                targetPrefab: "truck",
+                reward: { fuel: 35, score: 320, stability: 0 }
+            }
+        ];
+
+        const lettersSequence = ["H", "O", "V", "E", "R", "W", "O", "R", "L", "D"];
+        const chunkDepth = 220;
+        const missionLeadChunks = 3;
+        const maxFutureMissionChunks = 6;
+        const supportFuelCap = 8;
+
         let isPlaying = false;
         let isGliding = false;
+        let isSkidding = false;
         let hasEngineDied = false;
         let score = 0;
         let maxFuel = 100;
         let currentFuel = maxFuel;
-        
-        let flightSpeed = 120; // Velocidad de avance (scripted)
+        let flightSpeed = 120;
         const STALL_SPEED = 40;
-        let glideDuration = 10.0; // Tiempo de planeo progresivo en segundos
-        let currentGlideTime = 0; 
-        let stallTimer = 0; 
-        
-        // --- VARIABLES GAMEFEEL ---
+        let glideDuration = 10.0;
+        let currentGlideTime = 0;
+        let stallTimer = 0;
         let shakeIntensity = 0;
         let currentFov = 60;
-        let engineMesh; 
+        let stabilityBoostTimer = 0;
+        let totalDistanceMoved = 0;
+        let bestDiscoveredDistance = 0;
+        let letterCursor = 0;
+        let lastFuelStatusTimeoutId = null;
 
-        // Controles y físicas
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
         let shipVelocity = new THREE.Vector3();
-        let targetRotation = new THREE.Vector2(0, 0); 
-        const maxPitch = Math.PI / 3; // 60 grados max
-        const maxYaw = Math.PI / 2;   
-        let totalDistanceMoved = 0;
+        let targetRotation = new THREE.Vector2(0, 0);
+        const maxPitch = Math.PI / 3;
 
-        // Elementos UI
-        const uiScore = document.getElementById('score');
-        const uiAltitude = document.getElementById('altitude');
-        const uiFuelFill = document.getElementById('fuel-bar-fill');
-        const uiFuelText = document.getElementById('fuel-status-text');
-        const uiFuelContainer = document.getElementById('fuel-container-box');
-        const uiStallWarning = document.getElementById('stall-warning');
-        
-        // Elementos Slider
-        const uiGlideSlider = document.getElementById('glide-duration-slider');
-        const uiGlideVal = document.getElementById('glide-duration-val');
-        uiGlideSlider.addEventListener('input', (e) => {
-            glideDuration = parseFloat(e.target.value);
+        const uiScore = document.getElementById("score");
+        const uiAltitude = document.getElementById("altitude");
+        const uiDiscoverDistance = document.getElementById("discover-distance");
+        const uiFuelFill = document.getElementById("fuel-bar-fill");
+        const uiFuelText = document.getElementById("fuel-status-text");
+        const uiFuelContainer = document.getElementById("fuel-container-box");
+        const uiStallWarning = document.getElementById("stall-warning");
+        const uiMissionTitle = document.getElementById("mission-title");
+        const uiMissionDescription = document.getElementById("mission-description");
+        const uiMissionProgressLabel = document.getElementById("mission-progress-label");
+        const uiMissionProgressFill = document.getElementById("mission-progress-fill");
+        const uiMissionReward = document.getElementById("mission-reward");
+        const uiMissionOrder = document.getElementById("mission-order");
+        const uiMissionToast = document.getElementById("mission-toast");
+        const uiHudPower = document.getElementById("hud-power");
+        const uiHudAngle = document.getElementById("hud-angle");
+        const uiHudDescent = document.getElementById("hud-descent");
+        const uiMinimapContainer = document.getElementById("minimap-container");
+        const uiMinimapContent = document.getElementById("minimap-content");
+        const uiMinimapPlayer = document.getElementById("minimap-player");
+        const screenStart = document.getElementById("start-screen");
+        const screenGameOver = document.getElementById("game-over-screen");
+        const uiFinalScore = document.getElementById("final-score");
+        const uiFinalMissionSummary = document.getElementById("final-mission-summary");
+        const uiGlideSlider = document.getElementById("glide-duration-slider");
+        const uiGlideVal = document.getElementById("glide-duration-val");
+        const uiTouchIndicator = document.getElementById("touch-indicator");
+
+        const missionState = {
+            sequenceIndex: 0,
+            activeMission: null,
+            progress: 0,
+            completedCount: 0,
+            totalCollectibles: 0,
+            toastHideAt: 0
+        };
+
+        const touchState = {
+            active: false,
+            pointerId: null,
+            startX: 0,
+            startY: 0,
+            x: 0,
+            y: 0
+        };
+
+        uiGlideSlider.addEventListener("input", (event) => {
+            glideDuration = parseFloat(event.target.value);
             uiGlideVal.innerText = glideDuration.toFixed(1);
         });
 
-        // Elementos UI Debug
-        const uiHudPower = document.getElementById('hud-power');
-        const uiHudAngle = document.getElementById('hud-angle');
-        const uiHudDescent = document.getElementById('hud-descent');
-        const uiMinimapContainer = document.getElementById('minimap-container');
-        const uiMinimapContent = document.getElementById('minimap-content');
-        const uiMinimapPlayer = document.getElementById('minimap-player');
-
-        const screenStart = document.getElementById('start-screen');
-        const screenGameOver = document.getElementById('game-over-screen');
-        const uiFinalScore = document.getElementById('final-score');
-
-        // --- INICIALIZACIÓN ---
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); 
-            scene.fog = new THREE.Fog(0x87CEEB, 100, 800); 
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 100, 900);
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1800);
             scene.add(camera);
-            
+
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-            
+            scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(100, 200, 50);
             dirLight.castShadow = true;
-            dirLight.shadow.camera.top = 200;
-            dirLight.shadow.camera.bottom = -200;
-            dirLight.shadow.camera.left = -200;
-            dirLight.shadow.camera.right = 200;
+            dirLight.shadow.camera.top = 220;
+            dirLight.shadow.camera.bottom = -220;
+            dirLight.shadow.camera.left = -220;
+            dirLight.shadow.camera.right = 220;
             scene.add(dirLight);
 
             createPlayerShip();
             createEnvironment();
             createWind();
-            createGlideVisuals(); 
+            createVisualEffects();
 
-            window.addEventListener('resize', onWindowResize);
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
+            window.addEventListener("resize", onWindowResize);
+            document.addEventListener("keydown", onKeyDown);
+            document.addEventListener("keyup", onKeyUp);
+            document.addEventListener("pointerdown", onPointerDown, { passive: false });
+            document.addEventListener("pointermove", onPointerMove, { passive: false });
+            document.addEventListener("pointerup", onPointerUp);
+            document.addEventListener("pointercancel", onPointerUp);
 
-            document.getElementById('start-btn').addEventListener('click', startGame);
-            document.getElementById('restart-btn').addEventListener('click', startGame);
+            document.getElementById("start-btn").addEventListener("click", startGame);
+            document.getElementById("restart-btn").addEventListener("click", startGame);
 
             animate();
         }
 
-        function createGlideVisuals() {
-            // Estelas de las alas (Wing Trails)
+        function createVisualEffects() {
             const trailGeom = new THREE.CylinderGeometry(0.05, 0.05, 8, 4);
             trailGeom.rotateX(Math.PI / 2);
-            trailGeom.translate(0, 0, 4); // Desplazar hacia atrás
+            trailGeom.translate(0, 0, 4);
             const trailMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending });
-            
-            for(let i=0; i<2; i++) {
-                let trail = new THREE.Mesh(trailGeom, trailMat);
-                trail.position.set(i === 0 ? -7 : 7, 0, 2); // Puntas de las alas
+
+            for (let i = 0; i < 2; i++) {
+                const trail = new THREE.Mesh(trailGeom, trailMat.clone());
+                trail.position.set(i === 0 ? -7 : 7, 0, 2);
                 playerShip.add(trail);
                 wingTrails.push(trail);
             }
 
-            // Partículas de humo de avería
-            const smokeGeom = new THREE.BoxGeometry(1, 1, 1);
-            const smokeMat = new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.0 });
-            for(let i=0; i<15; i++) {
-                let smoke = new THREE.Mesh(smokeGeom, smokeMat);
-                smoke.userData = { active: false, life: 0, vel: new THREE.Vector3() };
-                scene.add(smoke);
-                engineSmokeParticles.push(smoke);
-            }
-
-            // Partículas de polvo del suelo
-            const dustGeom = new THREE.BoxGeometry(2, 2, 2);
-            const dustMat = new THREE.MeshBasicMaterial({ color: 0x8B7355, transparent: true, opacity: 0.0 });
-            for(let i=0; i<20; i++) {
-                let dust = new THREE.Mesh(dustGeom, dustMat);
-                dust.userData = { active: false, life: 0, vel: new THREE.Vector3() };
-                scene.add(dust);
-                groundDustParticles.push(dust);
-            }
+            createParticlePool(engineSmokeParticles, 16, new THREE.BoxGeometry(1, 1, 1), () => new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0 }));
+            createParticlePool(groundDustParticles, 28, new THREE.BoxGeometry(2, 2, 2), () => new THREE.MeshBasicMaterial({ color: 0x8b7355, transparent: true, opacity: 0 }));
+            createParticlePool(sparkParticles, 80, new THREE.BoxGeometry(0.12, 0.12, 0.7), () => new THREE.MeshBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 1 }));
         }
 
-        function triggerEngineDeathSmoke() {
-            engineSmokeParticles.forEach(p => {
-                p.userData.active = true;
-                p.userData.life = 1.0 + Math.random();
-                p.position.copy(playerShip.position).add(new THREE.Vector3(0, 0, 6).applyEuler(playerShip.rotation));
-                
-                let randomDir = new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*10, Math.random()*20 + 20);
-                randomDir.applyEuler(playerShip.rotation);
-                p.userData.vel.copy(randomDir);
-                
-                p.material.opacity = 0.8;
-                p.scale.setScalar(1.0 + Math.random() * 2);
-            });
-        }
-
-        function spawnGroundDust() {
-            let p = groundDustParticles.find(p => !p.userData.active);
-            if (p) {
-                p.userData.active = true;
-                p.userData.life = 0.5 + Math.random() * 0.5;
-                p.position.set(
-                    playerShip.position.x + (Math.random()-0.5)*10, 
-                    0.5, 
-                    playerShip.position.z + (Math.random()-0.5)*5 + 10
-                );
-                p.userData.vel.set((Math.random()-0.5)*5, Math.random()*15, flightSpeed * 0.5);
-                p.material.opacity = 0.5;
-                p.scale.setScalar(1.0);
+        function createParticlePool(pool, count, geometry, materialFactory) {
+            for (let i = 0; i < count; i++) {
+                const mesh = new THREE.Mesh(geometry, materialFactory());
+                mesh.userData = { active: false, life: 0, vel: new THREE.Vector3() };
+                scene.add(mesh);
+                pool.push(mesh);
             }
-        }
-
-        function updateParticles(delta) {
-            engineSmokeParticles.forEach(p => {
-                if (p.userData.active) {
-                    p.position.addScaledVector(p.userData.vel, delta);
-                    p.scale.setScalar(p.userData.life * 2);
-                    p.material.opacity = p.userData.life * 0.8;
-                    p.userData.life -= delta;
-                    if (p.userData.life <= 0) p.userData.active = false;
-                }
-            });
-
-            groundDustParticles.forEach(p => {
-                if (p.userData.active) {
-                    p.position.addScaledVector(p.userData.vel, delta);
-                    p.scale.setScalar(p.userData.life * 4);
-                    p.material.opacity = p.userData.life * 0.5;
-                    p.userData.life -= delta;
-                    if (p.userData.life <= 0) p.userData.active = false;
-                }
-            });
-
-            let targetTrailOpacity = 0.0;
-            let trailScaleZ = 1.0;
-            if (isGliding) {
-                targetTrailOpacity = Math.max(0, (flightSpeed - 80) / 100); 
-                trailScaleZ = 1.0 + (flightSpeed / 50);
-                wingTrails.forEach((t, i) => { t.position.y = Math.sin(Date.now() * 0.02 + i) * 0.2; });
-            } else if (flightSpeed > 180) { 
-                targetTrailOpacity = (flightSpeed - 180) / 70;
-                trailScaleZ = 2.0;
-            }
-
-            wingTrails.forEach(t => {
-                t.material.opacity = THREE.MathUtils.lerp(t.material.opacity, targetTrailOpacity, delta * 5);
-                t.scale.z = THREE.MathUtils.lerp(t.scale.z, trailScaleZ, delta * 5);
-            });
         }
 
         function createPlayerShip() {
             playerShip = new THREE.Group();
 
             const bodyGeom = new THREE.ConeGeometry(2, 10, 8);
-            bodyGeom.rotateX(Math.PI / 2); 
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
-            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            bodyGeom.rotateX(Math.PI / 2);
+            const body = new THREE.Mesh(bodyGeom, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
             body.castShadow = true;
             playerShip.add(body);
 
-            const wingGeom = new THREE.BoxGeometry(15, 0.5, 3);
-            const wingMat = new THREE.MeshStandardMaterial({ color: 0x0066cc });
-            const wings = new THREE.Mesh(wingGeom, wingMat);
+            const wings = new THREE.Mesh(
+                new THREE.BoxGeometry(15, 0.5, 3),
+                new THREE.MeshStandardMaterial({ color: 0x0066cc })
+            );
             wings.position.set(0, 0, 2);
             wings.castShadow = true;
             playerShip.add(wings);
 
             const engineGeom = new THREE.CylinderGeometry(0.8, 1.5, 2, 8);
             engineGeom.rotateX(Math.PI / 2);
-            engineGeom.translate(0, 0, -1); 
-            const engineMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.9 });
-            engineMesh = new THREE.Mesh(engineGeom, engineMat);
-            engineMesh.position.set(0, 0, 6); 
+            engineGeom.translate(0, 0, -1);
+            engineMesh = new THREE.Mesh(engineGeom, new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.9 }));
+            engineMesh.position.set(0, 0, 6);
             engineMesh.name = "engineGlow";
             playerShip.add(engineMesh);
 
-            const hudRingGeo = new THREE.RingGeometry(8, 8.5, 32);
-            const hudRingMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
-            const hudRing = new THREE.Mesh(hudRingGeo, hudRingMat);
+            const hudRing = new THREE.Mesh(
+                new THREE.RingGeometry(8, 8.5, 32),
+                new THREE.MeshBasicMaterial({ color: 0x00ffaa, side: THREE.DoubleSide, transparent: true, opacity: 0.2 })
+            );
             hudRing.name = "hudRing";
             playerShip.add(hudRing);
 
@@ -637,29 +822,30 @@
         }
 
         function createEnvironment() {
-            const groundGeom = new THREE.PlaneGeometry(10000, 10000);
-            const groundMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 });
-            groundPlane = new THREE.Mesh(groundGeom, groundMat);
+            groundPlane = new THREE.Mesh(
+                new THREE.PlaneGeometry(14000, 14000),
+                new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.82 })
+            );
             groundPlane.rotation.x = -Math.PI / 2;
             groundPlane.receiveShadow = true;
             scene.add(groundPlane);
 
-            groundGrid = new THREE.GridHelper(10000, 200, 0x000000, 0x000000);
+            groundGrid = new THREE.GridHelper(14000, 260, 0x000000, 0x000000);
             groundGrid.position.y = 0.1;
-            groundGrid.material.opacity = 0.2;
+            groundGrid.material.opacity = 0.18;
             groundGrid.material.transparent = true;
             scene.add(groundGrid);
 
-            const shadowGeom = new THREE.CircleGeometry(3, 16);
-            const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 });
-            dropShadow = new THREE.Mesh(shadowGeom, shadowMat);
+            dropShadow = new THREE.Mesh(
+                new THREE.CircleGeometry(3, 18),
+                new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 })
+            );
             dropShadow.rotation.x = -Math.PI / 2;
             dropShadow.position.y = 0.2;
             scene.add(dropShadow);
 
-            const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffaa, linewidth: 2 });
-            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-10,0)]);
-            dropLine = new THREE.Line(lineGeo, lineMat);
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -10, 0)]);
+            dropLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x00ffaa }));
             scene.add(dropLine);
         }
 
@@ -667,14 +853,14 @@
             windParticles = new THREE.Group();
             const lineGeom = new THREE.CylinderGeometry(0.01, 0.01, 5, 3);
             lineGeom.rotateX(Math.PI / 2);
-            const lineMat = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending});
-            
-            for(let i=0; i<60; i++){
-                let mesh = new THREE.Mesh(lineGeom, lineMat);
-                mesh.userData = { 
-                    offsetX: (Math.random()-0.5)*40, 
-                    offsetY: (Math.random()-0.5)*30, 
-                    offsetZ: -(Math.random()*40) - 10 
+            const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+
+            for (let i = 0; i < 60; i++) {
+                const mesh = new THREE.Mesh(lineGeom, lineMat.clone());
+                mesh.userData = {
+                    offsetX: (Math.random() - 0.5) * 40,
+                    offsetY: (Math.random() - 0.5) * 30,
+                    offsetZ: -(Math.random() * 40) - 10
                 };
                 mesh.position.set(mesh.userData.offsetX, mesh.userData.offsetY, mesh.userData.offsetZ);
                 windParticles.add(mesh);
@@ -682,370 +868,997 @@
             camera.add(windParticles);
         }
 
-        function updateWind(delta) {
-            let speedRatio = Math.max(0, (flightSpeed - 80) / 100); 
-            let targetOpacity = speedRatio * 0.25; 
+        function createSceneryObject(chunkIndex) {
+            const baseZ = -(chunkIndex * chunkDepth) - 200;
+            const localCount = 4 + (chunkIndex % 3);
 
-            windParticles.children.forEach(p => {
-                p.userData.offsetZ += (flightSpeed * 0.5) * delta;
-                if(p.userData.offsetZ > -5) {
-                    p.userData.offsetZ -= 45; 
-                    p.userData.offsetX = (Math.random()-0.5)*40;
-                    p.userData.offsetY = (Math.random()-0.5)*30;
+            for (let i = 0; i < localCount; i++) {
+                const x = -280 + (((i * 97) + chunkIndex * 43) % 560);
+                const z = baseZ - i * 30 - ((chunkIndex * 19) % 60);
+                const type = ((chunkIndex * 7) + i) % 10;
+                const group = new THREE.Group();
+
+                if (type < 5) {
+                    const trunk = new THREE.Mesh(treeTrunkGeom, treeTrunkMat);
+                    trunk.position.y = 2;
+                    trunk.castShadow = true;
+                    const leaves = new THREE.Mesh(treeLeavesGeom, treeLeavesMat);
+                    leaves.position.y = 8;
+                    leaves.castShadow = true;
+                    group.add(trunk, leaves);
+                } else if (type < 8) {
+                    const base = new THREE.Mesh(houseBaseGeom, houseBaseMat);
+                    base.position.y = 3;
+                    base.castShadow = true;
+                    const roof = new THREE.Mesh(houseRoofGeom, houseRoofMat);
+                    roof.position.y = 8;
+                    roof.castShadow = true;
+                    group.add(base, roof);
+                } else {
+                    const mountain = new THREE.Mesh(mountainGeom, mountainMat);
+                    const scale = 1 + ((chunkIndex + i) % 3) * 0.7;
+                    mountain.position.y = 18 + ((chunkIndex + i) % 4) * 6;
+                    mountain.scale.set(scale, scale, scale);
+                    mountain.castShadow = true;
+                    group.add(mountain);
                 }
-                
-                p.position.set(p.userData.offsetX, p.userData.offsetY, p.userData.offsetZ);
-                p.scale.z = Math.max(0.1, speedRatio * 3); 
-                p.material.opacity = targetOpacity;
-            });
-        }
 
-        function createSceneryObject() {
-            let angle = playerShip.rotation.y + (Math.random() - 0.5) * Math.PI * 1.5; 
-            let distance = 600 + Math.random() * 400; 
-            
-            let x = playerShip.position.x - Math.sin(angle) * distance;
-            let z = playerShip.position.z - Math.cos(angle) * distance;
-            
-            let type = Math.random();
-            let group = new THREE.Group();
-            
-            if (type < 0.6) { 
-                let trunk = new THREE.Mesh(treeTrunkGeom, treeTrunkMat); trunk.position.y = 2; trunk.castShadow = true;
-                let leaves = new THREE.Mesh(treeLeavesGeom, treeLeavesMat); leaves.position.y = 8; leaves.castShadow = true;
-                group.add(trunk, leaves);
-            } else if (type < 0.85) { 
-                let base = new THREE.Mesh(houseBaseGeom, houseBaseMat); base.position.y = 3; base.castShadow = true;
-                let roof = new THREE.Mesh(houseRoofGeom, houseRoofMat); roof.position.y = 8; roof.castShadow = true;
-                group.add(base, roof); group.rotation.y = Math.random() * Math.PI;
-            } else { 
-                let mountain = new THREE.Mesh(mountainGeom, mountainMat); mountain.position.y = 20 + Math.random() * 10;
-                let scale = 1 + Math.random() * 2; mountain.scale.set(scale, scale, scale); mountain.castShadow = true;
-                group.add(mountain);
+                group.position.set(x, 0, z);
+                scene.add(group);
+                sceneryObjects.push(group);
             }
-            
-            group.position.set(x, 0, z);
-            scene.add(group);
-            sceneryObjects.push(group);
         }
 
         function updateScenery() {
             for (let i = sceneryObjects.length - 1; i >= 0; i--) {
-                let obj = sceneryObjects[i];
-                if (obj.position.distanceTo(playerShip.position) > 1200 || (obj.position.z > playerShip.position.z + 100)) { 
-                    scene.remove(obj); sceneryObjects.splice(i, 1);
+                const obj = sceneryObjects[i];
+                if (obj.position.distanceTo(playerShip.position) > 1700 || obj.position.z > playerShip.position.z + 180) {
+                    scene.remove(obj);
+                    sceneryObjects.splice(i, 1);
                 }
             }
-            while (sceneryObjects.length < 80) { createSceneryObject(); }
-        }
 
-        function spawnFuel() {
-            const fuelGeom = new THREE.TorusGeometry(3, 1, 8, 16);
-            const fuelMat = new THREE.MeshStandardMaterial({ color: 0x00ffaa, emissive: 0x00ffaa, emissiveIntensity: 0.5 });
-            const fuel = new THREE.Mesh(fuelGeom, fuelMat);
-            
-            const zOffset = playerShip.position.z - 600 - Math.random() * 400;
-            const xOffset = playerShip.position.x + (Math.random() - 0.5) * 400;
-            const yOffset = 10 + Math.random() * 80; 
-            
-            fuel.position.set(xOffset, yOffset, zOffset);
-            fuel.castShadow = true;
-            
-            scene.add(fuel);
-            fuels.push(fuel);
-        }
-
-        function updateFuels(delta) {
-            for (let i = fuels.length - 1; i >= 0; i--) {
-                const fuel = fuels[i];
-                fuel.rotation.x += 2 * delta; fuel.rotation.y += 2 * delta;
-
-                if (playerShip.position.distanceTo(fuel.position) < 15) {
-                    currentFuel = Math.min(maxFuel, currentFuel + 25);
-                    scene.remove(fuel); fuels.splice(i, 1);
-                    uiFuelFill.style.filter = "brightness(2)"; setTimeout(() => uiFuelFill.style.filter = "none", 200);
-                    
-                    shakeIntensity += 0.5; currentFov += 5; // Gamefeel Impact
-                    
-                    if(isGliding) {
-                        isGliding = false; hasEngineDied = false;
-                        uiFuelFill.classList.remove('glide-warning');
-                        uiFuelContainer.classList.remove('glide-border');
-                        uiFuelText.innerText = "MOTORES RE-ENCENDIDOS";
-                        uiFuelText.style.color = "#00ffaa";
-                        playerShip.getObjectByName("engineGlow").material.color.setHex(0xff8800);
-                        setTimeout(() => { if(!isGliding) uiFuelText.innerText = "MOTORES ACTIVOS"; uiFuelText.style.color = "#ffaa00"; }, 2000);
-                    }
-                    continue;
+            const currentChunk = getPlayerChunk();
+            for (let offset = 0; offset < maxFutureMissionChunks + 4; offset++) {
+                const chunkIndex = currentChunk + offset;
+                if (!spawnedChunks.has(chunkIndex)) {
+                    spawnedChunks.add(chunkIndex);
+                    createSceneryObject(chunkIndex);
                 }
-
-                if (fuel.position.z > playerShip.position.z + 100) { scene.remove(fuel); fuels.splice(i, 1); }
             }
-            if (fuels.length < 5 && Math.random() < 0.05) spawnFuel();
         }
-
-        function updateMinimap() {
-            const mapScale = 0.1; 
-            let mapHTML = '';
-            fuels.forEach(fuel => {
-                let dx = fuel.position.x - playerShip.position.x; let dz = fuel.position.z - playerShip.position.z;
-                let px = 75 + (dx * mapScale); let py = 75 + (dz * mapScale); 
-                let distToCenter = Math.sqrt(Math.pow(px - 75, 2) + Math.pow(py - 75, 2));
-                if (distToCenter < 75) mapHTML += `<div class="map-dot" style="left: ${px}px; top: ${py}px;"></div>`;
-            });
-            uiMinimapContent.innerHTML = mapHTML;
-            uiMinimapContent.style.transform = `rotate(${playerShip.rotation.y}rad)`;
-        }
-
-        function onKeyDown(event) { if (keys.hasOwnProperty(event.key)) keys[event.key] = true; if (keys.hasOwnProperty(event.code)) keys[event.code] = true; }
-        function onKeyUp(event) { if (keys.hasOwnProperty(event.key)) keys[event.key] = false; if (keys.hasOwnProperty(event.code)) keys[event.code] = false; }
 
         function startGame() {
-            screenStart.classList.add('hidden');
-            screenGameOver.classList.add('hidden');
-            uiStallWarning.style.display = 'none';
-            
-            uiHudPower.style.display = 'block'; uiHudAngle.style.display = 'block'; uiHudDescent.style.display = 'block'; uiMinimapContainer.style.display = 'block';
+            screenStart.classList.add("hidden");
+            screenGameOver.classList.add("hidden");
+            uiStallWarning.style.display = "none";
+
+            uiHudPower.style.display = "block";
+            uiHudAngle.style.display = "block";
+            uiHudDescent.style.display = "block";
+            uiMinimapContainer.style.display = "block";
 
             playerShip.position.set(0, 100, 0);
             playerShip.rotation.set(0, 0, 0);
             targetRotation.set(0, 0);
-            
-            currentFuel = maxFuel; score = 0; totalDistanceMoved = 0;
-            isGliding = false; hasEngineDied = false; isPlaying = true;
-            flightSpeed = 120; shipVelocity.set(0,0,0); shakeIntensity = 0; stallTimer = 0; currentGlideTime = 0;
 
-            fuels.forEach(f => scene.remove(f)); fuels = [];
-            sceneryObjects.forEach(obj => scene.remove(obj)); sceneryObjects = [];
-            
-            engineSmokeParticles.forEach(p => p.userData.active = false);
-            groundDustParticles.forEach(p => p.userData.active = false);
+            currentFuel = maxFuel;
+            score = 0;
+            totalDistanceMoved = 0;
+            accumulatedDistance = 0;
+            bestDiscoveredDistance = 0;
+            isGliding = false;
+            hasEngineDied = false;
+            isSkidding = false;
+            isPlaying = true;
+            flightSpeed = 120;
+            shipVelocity.set(0, 0, 0);
+            shakeIntensity = 0;
+            stallTimer = 0;
+            currentGlideTime = 0;
+            stabilityBoostTimer = 0;
+            letterCursor = 0;
 
-            uiFuelFill.classList.remove('glide-warning');
-            uiFuelContainer.classList.remove('glide-border');
-            uiFuelText.innerText = "MOTORES ACTIVOS";
-            uiFuelText.style.color = "#ffaa00";
+            resetWorldObjects();
+            resetMissionState();
+
+            engineSmokeParticles.forEach(resetParticle);
+            groundDustParticles.forEach(resetParticle);
+            sparkParticles.forEach(resetParticle);
+
+            uiFuelFill.classList.remove("glide-warning");
+            uiFuelContainer.classList.remove("glide-border");
+            setFuelStatus("MOTORES ACTIVOS", "#ffaa00");
             playerShip.getObjectByName("engineGlow").material.color.setHex(0xff8800);
-            
-            for(let i=0; i<3; i++) spawnFuel();
+            updateMissionHud();
+            updateScoreHud();
+            ensureMissionTargetsAhead();
         }
 
-        function gameOver() {
-            isPlaying = false;
-            screenGameOver.classList.remove('hidden');
-            uiFinalScore.innerText = `Distancia Total: ${Math.floor(score)} m`;
-            shakeIntensity = 8.0; 
-            uiStallWarning.style.display = 'none';
-
-            uiHudPower.style.display = 'none'; uiHudAngle.style.display = 'none'; uiHudDescent.style.display = 'none'; uiMinimapContainer.style.display = 'none';
+        function resetParticle(particle) {
+            particle.userData.active = false;
+            particle.userData.life = 0;
+            particle.material.opacity = 0;
         }
 
-        let clock = new THREE.Clock();
+        function resetWorldObjects() {
+            worldObjects.forEach((object) => scene.remove(object.mesh));
+            worldObjects = [];
+            activeMissionObjects = [];
+            missionChunkQueue = [];
+            spawnedChunks = new Set();
+            missionChunksUsed = new Set();
+
+            sceneryObjects.forEach((obj) => scene.remove(obj));
+            sceneryObjects = [];
+        }
+
+        function resetMissionState() {
+            missionState.sequenceIndex = 0;
+            missionState.progress = 0;
+            missionState.completedCount = 0;
+            missionState.totalCollectibles = 0;
+            missionState.toastHideAt = 0;
+            setMissionByIndex(0);
+        }
+
+        function setMissionByIndex(index) {
+            missionState.sequenceIndex = index % MISSION_DEFS.length;
+            missionState.activeMission = MISSION_DEFS[missionState.sequenceIndex];
+            missionState.progress = 0;
+            activeMissionObjects = [];
+            missionChunkQueue = [];
+            missionChunksUsed = new Set();
+            showMissionToast(`Nueva misión: ${missionState.activeMission.title}`);
+            updateMissionHud();
+        }
+
+        function completeCurrentMission() {
+            const mission = missionState.activeMission;
+            missionState.completedCount += 1;
+            currentFuel = Math.min(maxFuel, currentFuel + mission.reward.fuel);
+            score += mission.reward.score;
+            stabilityBoostTimer = Math.max(stabilityBoostTimer, mission.reward.stability);
+            uiFuelFill.style.filter = "brightness(1.8)";
+            setTimeout(() => {
+                uiFuelFill.style.filter = "none";
+            }, 280);
+
+            showMissionToast(`Misión completada: ${mission.title}`);
+            setMissionByIndex(missionState.sequenceIndex + 1);
+            ensureMissionTargetsAhead(true);
+        }
+
+        function updateMissionHud() {
+            const mission = missionState.activeMission;
+            uiMissionTitle.innerText = mission.title;
+            uiMissionDescription.innerText = mission.description;
+            uiMissionProgressLabel.innerText = `${missionState.progress} / ${mission.requiredCount}`;
+            uiMissionProgressFill.style.width = `${(missionState.progress / mission.requiredCount) * 100}%`;
+            uiMissionReward.innerText = `+${mission.reward.fuel} fuel / +${mission.reward.score} pts`;
+            uiMissionOrder.innerText = `${(missionState.sequenceIndex % MISSION_DEFS.length) + 1} / ${MISSION_DEFS.length}`;
+        }
+
+        function showMissionToast(text) {
+            uiMissionToast.innerText = text;
+            uiMissionToast.classList.add("visible");
+            missionState.toastHideAt = performance.now() + 1800;
+        }
+
+        function updateMissionToast() {
+            if (uiMissionToast.classList.contains("visible") && performance.now() > missionState.toastHideAt) {
+                uiMissionToast.classList.remove("visible");
+            }
+        }
+
+        function setFuelStatus(text, color) {
+            uiFuelText.innerText = text;
+            uiFuelText.style.color = color;
+        }
+
+        function clearFuelStatusTimeout() {
+            if (lastFuelStatusTimeoutId) {
+                clearTimeout(lastFuelStatusTimeoutId);
+                lastFuelStatusTimeoutId = null;
+            }
+        }
+
+        function scheduleFuelStatusReset() {
+            clearFuelStatusTimeout();
+            lastFuelStatusTimeoutId = setTimeout(() => {
+                if (!isGliding && !isSkidding) {
+                    setFuelStatus("MOTORES ACTIVOS", "#ffaa00");
+                }
+            }, 2000);
+        }
+
+        function getPlayerChunk() {
+            return Math.max(0, Math.floor((-playerShip.position.z) / chunkDepth));
+        }
+
+        function ensureMissionTargetsAhead(force = false) {
+            const mission = missionState.activeMission;
+            if (!mission) return;
+
+            const currentChunk = getPlayerChunk();
+            const activeCount = activeMissionObjects.filter((obj) => !obj.collected).length;
+            const needed = mission.requiredCount - activeCount - missionState.progress;
+            if (needed <= 0 && !force) return;
+
+            let chunkIndex = currentChunk + missionLeadChunks;
+            while (missionChunkQueue.length < maxFutureMissionChunks) {
+                if (!missionChunksUsed.has(chunkIndex)) {
+                    missionChunkQueue.push(chunkIndex);
+                    missionChunksUsed.add(chunkIndex);
+                }
+                chunkIndex += 1;
+            }
+
+            let remaining = mission.requiredCount - missionState.progress - activeMissionObjects.filter((obj) => !obj.collected).length;
+            while (remaining > 0 && missionChunkQueue.length > 0) {
+                const chunk = missionChunkQueue.shift();
+                const created = spawnMissionPattern(mission, chunk, remaining);
+                remaining -= created;
+            }
+        }
+
+        function spawnMissionPattern(mission, chunkIndex, remaining) {
+            const positions = getPatternPositions(mission.spawnPattern, chunkIndex, remaining);
+            let created = 0;
+
+            positions.forEach((position) => {
+                if (created >= remaining) return;
+                const worldObject = createWorldObjectFromMission(mission, position, created);
+                scene.add(worldObject.mesh);
+                worldObjects.push(worldObject);
+                activeMissionObjects.push(worldObject);
+                created += 1;
+            });
+
+            spawnSupportFuelForPattern(mission, positions);
+            return created;
+        }
+
+        function getPatternPositions(pattern, chunkIndex, remaining) {
+            const baseZ = -(chunkIndex * chunkDepth) - 240;
+            const count = Math.min(remaining, pattern === "wideSearch" ? 3 : 2);
+            const positions = [];
+
+            if (pattern === "line") {
+                for (let i = 0; i < count; i++) {
+                    positions.push(new THREE.Vector3(-80 + i * 80, 42 + i * 5, baseZ - i * 40));
+                }
+            } else if (pattern === "arc") {
+                for (let i = 0; i < count; i++) {
+                    const t = count === 1 ? 0.5 : i / (count - 1);
+                    positions.push(new THREE.Vector3(-120 + t * 240, 48 + Math.sin(t * Math.PI) * 30, baseZ - i * 55));
+                }
+            } else if (pattern === "laneSplit") {
+                const lanes = [-150, 0, 150];
+                for (let i = 0; i < count; i++) {
+                    const lane = lanes[(chunkIndex + i) % lanes.length];
+                    positions.push(new THREE.Vector3(lane, 34 + ((chunkIndex + i) % 3) * 12, baseZ - i * 55));
+                }
+            } else if (pattern === "groundCluster") {
+                for (let i = 0; i < count; i++) {
+                    positions.push(new THREE.Vector3(-90 + i * 110, 2, baseZ - i * 70));
+                }
+            } else {
+                for (let i = 0; i < count; i++) {
+                    const spreadX = -210 + (((chunkIndex * 37) + i * 111) % 420);
+                    const spreadY = 24 + (((chunkIndex * 19) + i * 13) % 42);
+                    positions.push(new THREE.Vector3(spreadX, spreadY, baseZ - i * 70));
+                }
+            }
+
+            return positions;
+        }
+
+        function spawnSupportFuelForPattern(mission, positions) {
+            const currentFuelCount = worldObjects.filter((obj) => obj.kind === "fuel").length;
+            if (currentFuelCount >= supportFuelCap || mission.type === "crash") return;
+
+            positions.forEach((position, index) => {
+                if ((index + missionState.progress + currentFuelCount) % 2 !== 0) return;
+                const fuelPos = position.clone().add(new THREE.Vector3(((index % 2) ? 38 : -38), 8, -18));
+                const fuel = createFuelObject(fuelPos);
+                scene.add(fuel.mesh);
+                worldObjects.push(fuel);
+            });
+        }
+
+        function createWorldObjectFromMission(mission, position, localIndex) {
+            if (mission.targetPrefab === "statuette") return createStatuetteObject(position);
+            if (mission.targetPrefab === "letter") return createLetterObject(position);
+            if (mission.targetPrefab === "puzzle") return createPuzzleObject(position, localIndex);
+            return createTruckObject(position, localIndex);
+        }
+
+        function createFuelObject(position) {
+            const mesh = new THREE.Mesh(
+                new THREE.TorusGeometry(3, 1, 8, 18),
+                new THREE.MeshStandardMaterial({ color: 0x00ffaa, emissive: 0x00ffaa, emissiveIntensity: 0.5 })
+            );
+            mesh.position.copy(position);
+            mesh.castShadow = true;
+            return { kind: "fuel", mesh, collected: false, collisionRadius: 15, minimapClass: "fuel", persistWhileMission: false };
+        }
+
+        function createStatuetteObject(position) {
+            const mesh = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0xdabf52, emissive: 0x886d12, emissiveIntensity: 0.45, metalness: 0.7, roughness: 0.28 });
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.4, 8, 8), material);
+            body.position.y = 5;
+            body.castShadow = true;
+            const head = new THREE.Mesh(new THREE.SphereGeometry(2.2, 14, 14), material);
+            head.position.y = 10;
+            head.castShadow = true;
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.4, 1.4, 10), new THREE.MeshStandardMaterial({ color: 0x6a5320, roughness: 0.6 }));
+            base.position.y = 0.8;
+            base.castShadow = true;
+            mesh.add(body, head, base);
+            mesh.position.copy(position);
+            return { kind: "missionTarget", missionType: "collect", prefab: "statuette", mesh, collected: false, collisionRadius: 14, minimapClass: "mission-collect", rewardFuel: 15, rewardScore: 40 };
+        }
+
+        function createLetterObject(position) {
+            const char = lettersSequence[letterCursor % lettersSequence.length];
+            letterCursor += 1;
+            const texture = makeLabelTexture(char, "#ffe36a", "#5a4410");
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+            sprite.scale.set(16, 16, 1);
+            sprite.position.copy(position);
+            return { kind: "missionTarget", missionType: "collect", prefab: "letter", mesh: sprite, collected: false, collisionRadius: 12, minimapClass: "mission-collect", rewardFuel: 5, rewardScore: 32 };
+        }
+
+        function createPuzzleObject(position, index) {
+            const mesh = new THREE.Mesh(
+                new THREE.ExtrudeGeometry(makePuzzleShape(), { depth: 1.1, bevelEnabled: false }),
+                new THREE.MeshStandardMaterial({ color: 0x49d7ff, emissive: 0x0e4f68, emissiveIntensity: 0.4, metalness: 0.2, roughness: 0.35 })
+            );
+            mesh.rotation.x = Math.PI / 2;
+            mesh.rotation.z = index * 0.35;
+            mesh.scale.set(1.6, 1.6, 1.6);
+            mesh.position.copy(position);
+            mesh.castShadow = true;
+            return { kind: "missionTarget", missionType: "collect", prefab: "puzzle", mesh, collected: false, collisionRadius: 12, minimapClass: "mission-collect", rewardFuel: 4, rewardScore: 28 };
+        }
+
+        function createTruckObject(position, index) {
+            const mesh = new THREE.Group();
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(6, 5, 6), new THREE.MeshStandardMaterial({ color: 0xff5a4f, roughness: 0.5 }));
+            cab.position.set(-2, 5, 0);
+            cab.castShadow = true;
+            const cargo = new THREE.Mesh(new THREE.BoxGeometry(10, 6, 6), new THREE.MeshStandardMaterial({ color: 0xd6d6d6, roughness: 0.8 }));
+            cargo.position.set(5, 5.5, 0);
+            cargo.castShadow = true;
+            const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 3.2, 10), new THREE.MeshBasicMaterial({ color: 0xffe36a }));
+            beacon.position.set(5, 10, 0);
+            mesh.add(cab, cargo, beacon);
+            for (let wheelIndex = 0; wheelIndex < 4; wheelIndex++) {
+                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.9, 12), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(wheelIndex < 2 ? 0 : 8, 1.4, wheelIndex % 2 === 0 ? -3 : 3);
+                wheel.castShadow = true;
+                mesh.add(wheel);
+            }
+            mesh.position.copy(position);
+            mesh.userData.baseX = position.x;
+            mesh.userData.waveOffset = index * 1.2;
+            return { kind: "missionTarget", missionType: "crash", prefab: "truck", mesh, collected: false, collisionRadius: 13, minimapClass: "mission-truck", rewardFuel: 0, rewardScore: 80 };
+        }
+
+        function makePuzzleShape() {
+            const shape = new THREE.Shape();
+            shape.moveTo(-2, -2);
+            shape.lineTo(2, -2);
+            shape.lineTo(2, -0.8);
+            shape.absarc(2, 0, 1.2, -Math.PI / 2, Math.PI / 2, false);
+            shape.lineTo(2, 2);
+            shape.lineTo(-0.8, 2);
+            shape.absarc(0, 2, 1.2, 0, Math.PI, false);
+            shape.lineTo(-2, 2);
+            shape.lineTo(-2, -2);
+            return shape;
+        }
+
+        function makeLabelTexture(text, fill, stroke) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "bold 92px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = stroke;
+            ctx.strokeText(text, 64, 68);
+            ctx.fillStyle = fill;
+            ctx.fillText(text, 64, 68);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function triggerEngineDeathSmoke() {
+            engineSmokeParticles.forEach((particle) => {
+                particle.userData.active = true;
+                particle.userData.life = 1 + Math.random();
+                particle.position.copy(playerShip.position).add(new THREE.Vector3(0, 0, 6).applyEuler(playerShip.rotation));
+                particle.userData.vel.set((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, Math.random() * 20 + 20).applyEuler(playerShip.rotation);
+                particle.material.opacity = 0.8;
+                particle.scale.setScalar(1 + Math.random() * 2);
+            });
+        }
+
+        function spawnGroundDust() {
+            const particle = groundDustParticles.find((candidate) => !candidate.userData.active);
+            if (!particle) return;
+            particle.userData.active = true;
+            particle.userData.life = 0.5 + Math.random() * 0.5;
+            particle.position.set(
+                playerShip.position.x + (Math.random() - 0.5) * 10,
+                0.5,
+                playerShip.position.z + (Math.random() - 0.5) * 5 + 10
+            );
+            particle.userData.vel.set((Math.random() - 0.5) * 5, Math.random() * 15, flightSpeed * 0.5);
+            particle.material.opacity = 0.5;
+            particle.scale.setScalar(1);
+        }
+
+        function spawnSparks(count) {
+            for (let i = 0; i < count; i++) {
+                const particle = sparkParticles.find((candidate) => !candidate.userData.active);
+                if (!particle) return;
+                particle.userData.active = true;
+                particle.userData.life = 0.2 + Math.random() * 0.3;
+                particle.position.set(
+                    playerShip.position.x + (Math.random() - 0.5) * 3,
+                    playerShip.position.y - 1.5,
+                    playerShip.position.z + (Math.random() - 0.5) * 3
+                );
+                const forwardVel = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0)).multiplyScalar(flightSpeed * 0.4);
+                particle.userData.vel.set(
+                    forwardVel.x + (Math.random() - 0.5) * 15,
+                    5 + Math.random() * 15,
+                    forwardVel.z + (Math.random() - 0.5) * 15
+                );
+                particle.scale.setScalar(1);
+                particle.material.opacity = 1;
+                particle.material.color.setHex(Math.random() > 0.5 ? 0xffaa00 : 0xffffff);
+            }
+        }
+
+        function updateParticles(delta) {
+            engineSmokeParticles.forEach((particle) => updateSimpleParticle(particle, delta, 0.8, 2));
+            groundDustParticles.forEach((particle) => updateSimpleParticle(particle, delta, 0.5, 4));
+
+            sparkParticles.forEach((particle) => {
+                if (!particle.userData.active) return;
+                particle.userData.vel.y -= 80 * delta;
+                particle.position.addScaledVector(particle.userData.vel, delta);
+                if (particle.userData.vel.lengthSq() > 0.1) {
+                    particle.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), particle.userData.vel.clone().normalize());
+                }
+                if (particle.position.y < 0.2) {
+                    particle.position.y = 0.2;
+                    particle.userData.vel.y *= -0.5;
+                }
+                particle.userData.life -= delta;
+                particle.material.opacity = particle.userData.life * 4;
+                if (particle.userData.life <= 0) particle.userData.active = false;
+            });
+
+            let targetTrailOpacity = 0;
+            let trailScaleZ = 1;
+            if (isGliding && !isSkidding) {
+                targetTrailOpacity = Math.max(0, (flightSpeed - 80) / 100);
+                trailScaleZ = 1 + (flightSpeed / 50);
+                wingTrails.forEach((trail, index) => {
+                    trail.position.y = Math.sin(Date.now() * 0.02 + index) * 0.2;
+                });
+            } else if (flightSpeed > 180 && !isSkidding) {
+                targetTrailOpacity = (flightSpeed - 180) / 70;
+                trailScaleZ = 2;
+            }
+
+            wingTrails.forEach((trail) => {
+                trail.material.opacity = THREE.MathUtils.lerp(trail.material.opacity, targetTrailOpacity, delta * 5);
+                trail.scale.z = THREE.MathUtils.lerp(trail.scale.z, trailScaleZ, delta * 5);
+            });
+        }
+
+        function updateSimpleParticle(particle, delta, opacityFactor, scaleFactor) {
+            if (!particle.userData.active) return;
+            particle.position.addScaledVector(particle.userData.vel, delta);
+            particle.scale.setScalar(particle.userData.life * scaleFactor);
+            particle.material.opacity = particle.userData.life * opacityFactor;
+            particle.userData.life -= delta;
+            if (particle.userData.life <= 0) particle.userData.active = false;
+        }
+
+        function updateWind(delta) {
+            const speedRatio = Math.max(0, (flightSpeed - 80) / 100);
+            const targetOpacity = isSkidding ? 0 : speedRatio * 0.25;
+
+            windParticles.children.forEach((particle) => {
+                particle.userData.offsetZ += (flightSpeed * 0.5) * delta;
+                if (particle.userData.offsetZ > -5) {
+                    particle.userData.offsetZ -= 45;
+                    particle.userData.offsetX = (Math.random() - 0.5) * 40;
+                    particle.userData.offsetY = (Math.random() - 0.5) * 30;
+                }
+
+                particle.position.set(particle.userData.offsetX, particle.userData.offsetY, particle.userData.offsetZ);
+                particle.scale.z = Math.max(0.1, speedRatio * 3);
+                particle.material.opacity = targetOpacity;
+            });
+        }
+
+        function updateWorldObjects(delta) {
+            for (let i = worldObjects.length - 1; i >= 0; i--) {
+                const object = worldObjects[i];
+                updateWorldObjectMotion(object, delta);
+
+                if (object.collected) {
+                    scene.remove(object.mesh);
+                    worldObjects.splice(i, 1);
+                    continue;
+                }
+
+                if (object.mesh.position.z > playerShip.position.z + 180 || object.mesh.position.distanceTo(playerShip.position) > 2400) {
+                    scene.remove(object.mesh);
+                    worldObjects.splice(i, 1);
+                    continue;
+                }
+
+                if (object.kind === "fuel") {
+                    object.mesh.rotation.x += 2 * delta;
+                    object.mesh.rotation.y += 2 * delta;
+                    if (!isSkidding && playerShip.position.distanceTo(object.mesh.position) < object.collisionRadius) {
+                        handleFuelCollected(object);
+                    }
+                } else if (object.kind === "missionTarget") {
+                    updateMissionTargetVisuals(object, delta);
+                    if (object.missionType === "collect" && !isSkidding && playerShip.position.distanceTo(object.mesh.position) < object.collisionRadius) {
+                        handleMissionCollect(object);
+                    } else if (object.missionType === "crash") {
+                        handleTruckCollision(object);
+                    }
+                }
+            }
+
+            activeMissionObjects = activeMissionObjects.filter((object) => worldObjects.includes(object) && !object.collected);
+            ensureMissionTargetsAhead();
+            spawnSupportFuelIfNeeded();
+        }
+
+        function updateWorldObjectMotion(object, delta) {
+            if (object.prefab === "truck") {
+                object.mesh.position.x = object.mesh.userData.baseX + Math.sin(performance.now() * 0.0014 + object.mesh.userData.waveOffset) * 18;
+                return;
+            }
+
+            if (object.prefab === "letter") {
+                object.mesh.material.rotation += delta * 0.2;
+                object.mesh.position.y += Math.sin(performance.now() * 0.002 + object.mesh.position.z * 0.01) * 0.03;
+                return;
+            }
+
+            if (object.mesh.rotation) {
+                object.mesh.rotation.y += delta * 1.3;
+            }
+        }
+
+        function updateMissionTargetVisuals(object, delta) {
+            if (object.prefab === "statuette" || object.prefab === "puzzle") {
+                object.mesh.rotation.y += delta * 0.8;
+            }
+        }
+
+        function handleFuelCollected(object) {
+            object.collected = true;
+            currentFuel = Math.min(maxFuel, currentFuel + 25);
+            uiFuelFill.style.filter = "brightness(2)";
+            setTimeout(() => {
+                uiFuelFill.style.filter = "none";
+            }, 200);
+            shakeIntensity += 0.5;
+            currentFov += 5;
+
+            if (isGliding) {
+                isGliding = false;
+                hasEngineDied = false;
+                uiFuelFill.classList.remove("glide-warning");
+                uiFuelContainer.classList.remove("glide-border");
+                setFuelStatus("MOTORES RE-ENCENDIDOS", "#00ffaa");
+                playerShip.getObjectByName("engineGlow").material.color.setHex(0xff8800);
+                scheduleFuelStatusReset();
+            }
+        }
+
+        function handleMissionCollect(object) {
+            object.collected = true;
+            missionState.progress += 1;
+            missionState.totalCollectibles += 1;
+            currentFuel = Math.min(maxFuel, currentFuel + object.rewardFuel);
+            score += object.rewardScore;
+            shakeIntensity += 0.4;
+            currentFov += 2;
+            updateMissionHud();
+
+            if (missionState.progress >= missionState.activeMission.requiredCount) {
+                completeCurrentMission();
+            }
+        }
+
+        function handleTruckCollision(object) {
+            const horizontalDistance = Math.hypot(playerShip.position.x - object.mesh.position.x, playerShip.position.z - object.mesh.position.z);
+            const nearGroundImpact = playerShip.position.y <= 6;
+            const impactReady = horizontalDistance < object.collisionRadius && nearGroundImpact && flightSpeed > 60;
+            if (!impactReady || object.collected) return;
+
+            object.collected = true;
+            missionState.progress += 1;
+            score += object.rewardScore;
+            shakeIntensity = Math.max(shakeIntensity, 6);
+            triggerEngineDeathSmoke();
+
+            if (!isSkidding) {
+                isSkidding = true;
+                playerShip.position.y = 2;
+                shipVelocity.y = 0;
+                setFuelStatus("DERRAPANDO - IMPACTO CRÍTICO", "#ff3333");
+            }
+
+            updateMissionHud();
+            if (missionState.progress >= missionState.activeMission.requiredCount) {
+                completeCurrentMission();
+            }
+        }
+
+        function spawnSupportFuelIfNeeded() {
+            const currentFuelCount = worldObjects.filter((object) => object.kind === "fuel").length;
+            if (currentFuelCount >= supportFuelCap || isSkidding) return;
+
+            const playerChunk = getPlayerChunk();
+            for (let i = 1; i <= 2 && worldObjects.filter((object) => object.kind === "fuel").length < supportFuelCap; i++) {
+                const futureChunk = playerChunk + i + 1;
+                const hasFuelInChunk = worldObjects.some((object) => object.kind === "fuel" && Math.floor((-object.mesh.position.z) / chunkDepth) === futureChunk);
+                if (hasFuelInChunk) continue;
+                const pos = new THREE.Vector3((((futureChunk * 79) % 300) - 150), 30 + ((futureChunk * 17) % 40), -(futureChunk * chunkDepth) - 180);
+                const fuel = createFuelObject(pos);
+                scene.add(fuel.mesh);
+                worldObjects.push(fuel);
+            }
+        }
+
+        function updateMinimap() {
+            const mapScale = 0.1;
+            let html = "";
+
+            worldObjects.forEach((object) => {
+                if (object.collected) return;
+                const dx = object.mesh.position.x - playerShip.position.x;
+                const dz = object.mesh.position.z - playerShip.position.z;
+                const px = 80 + (dx * mapScale);
+                const py = 80 + (dz * mapScale);
+                const distToCenter = Math.hypot(px - 80, py - 80);
+                if (distToCenter >= 80) return;
+
+                html += `<div class="map-dot ${object.minimapClass}" style="left:${px}px;top:${py}px;"></div>`;
+            });
+
+            uiMinimapContent.innerHTML = html;
+            uiMinimapContent.style.transform = `rotate(${playerShip.rotation.y}rad)`;
+        }
+
+        function onKeyDown(event) {
+            if (keys.hasOwnProperty(event.key)) keys[event.key] = true;
+            if (keys.hasOwnProperty(event.code)) keys[event.code] = true;
+        }
+
+        function onKeyUp(event) {
+            if (keys.hasOwnProperty(event.key)) keys[event.key] = false;
+            if (keys.hasOwnProperty(event.code)) keys[event.code] = false;
+        }
+
+        function isInteractiveUi(target) {
+            return !!target.closest("button, input, label");
+        }
+
+        function setTouchIndicator(active, clientX = 0, clientY = 0) {
+            uiTouchIndicator.classList.toggle("active", active);
+            if (!active) {
+                uiTouchIndicator.style.setProperty("--knob-x", "0px");
+                uiTouchIndicator.style.setProperty("--knob-y", "0px");
+                return;
+            }
+
+            uiTouchIndicator.style.left = `${clientX}px`;
+            uiTouchIndicator.style.top = `${clientY}px`;
+            uiTouchIndicator.style.setProperty("--knob-x", `${touchState.x * 36}px`);
+            uiTouchIndicator.style.setProperty("--knob-y", `${touchState.y * 36}px`);
+        }
+
+        function onPointerDown(event) {
+            if (event.pointerType !== "touch" || touchState.active || isInteractiveUi(event.target)) return;
+
+            touchState.active = true;
+            touchState.pointerId = event.pointerId;
+            touchState.startX = event.clientX;
+            touchState.startY = event.clientY;
+            touchState.x = 0;
+            touchState.y = 0;
+            if (event.target && typeof event.target.setPointerCapture === "function") {
+                try {
+                    event.target.setPointerCapture(event.pointerId);
+                } catch (error) {
+                    // Ignore browsers that reject pointer capture on this target.
+                }
+            }
+            setTouchIndicator(true, event.clientX, event.clientY);
+            event.preventDefault();
+        }
+
+        function onPointerMove(event) {
+            if (!touchState.active || event.pointerId !== touchState.pointerId) return;
+            const dragRadius = Math.min(window.innerWidth, window.innerHeight) * 0.18;
+            touchState.x = THREE.MathUtils.clamp((event.clientX - touchState.startX) / dragRadius, -1, 1);
+            touchState.y = THREE.MathUtils.clamp((event.clientY - touchState.startY) / dragRadius, -1, 1);
+            setTouchIndicator(true, touchState.startX, touchState.startY);
+            event.preventDefault();
+        }
+
+        function onPointerUp(event) {
+            if (!touchState.active || event.pointerId !== touchState.pointerId) return;
+            touchState.active = false;
+            touchState.pointerId = null;
+            touchState.x = 0;
+            touchState.y = 0;
+            setTouchIndicator(false);
+        }
 
         function updateFlightPhysics(delta) {
             if (!isPlaying) return;
 
-            // --- 1. COMBUSTIBLE Y EVENTO DE APAGADO ---
-            if (currentFuel > 0) {
-                currentFuel -= 5 * delta;
-                if (currentFuel <= 0) {
-                    currentFuel = 0;
-                    isGliding = true;
-                }
-            }
-
-            if (isGliding && !hasEngineDied) {
-                hasEngineDied = true;
-                shakeIntensity = 4.0; 
-                currentFov -= 5; 
-                triggerEngineDeathSmoke(); 
-                
-                uiFuelFill.classList.add('glide-warning');
-                uiFuelContainer.classList.add('glide-border');
-                uiFuelText.innerText = "EMERGENCIA: MODO PLANEO";
-                uiFuelText.style.color = "#ff0000";
-                playerShip.getObjectByName("engineGlow").material.color.setHex(0x333333);
-            }
-            
-            uiFuelFill.style.width = `${(currentFuel / maxFuel) * 100}%`;
-
-            // --- 2. INPUTS DE VUELO ---
-            let pitchInput = 0; 
-            let yawInput = 0;   
-
-            if (keys.w || keys.ArrowUp) pitchInput = -1; 
-            if (keys.s || keys.ArrowDown) pitchInput = 1; 
-            if (keys.a || keys.ArrowLeft) yawInput = 1;
-            if (keys.d || keys.ArrowRight) yawInput = -1;
-
-            // --- 3. VELOCIDAD DE AVANCE SCRIPTED ---
-            let targetSpeed = 120; 
-            
-            if (isGliding) {
-                let glideProgress = Math.min(currentGlideTime / glideDuration, 1.0);
-                targetSpeed = THREE.MathUtils.lerp(120, 60, Math.pow(glideProgress, 1.5));
-            }
-
-            let pitchAngle = playerShip.rotation.x; 
-            
-            targetSpeed += (-pitchAngle * 180); 
-            let turnPenalty = Math.abs(playerShip.rotation.z) * 50; 
-            targetSpeed -= turnPenalty;
-
-            if (flightSpeed < STALL_SPEED && stallTimer <= 0) {
-                stallTimer = 1.0; 
-            }
-            if (stallTimer > 0) stallTimer -= delta;
-            
-            let isStalling = stallTimer > 0;
-            let speedAccel = isStalling ? 0.6 : 2.0;
-            flightSpeed = THREE.MathUtils.lerp(flightSpeed, targetSpeed, delta * speedAccel);
-            flightSpeed = THREE.MathUtils.clamp(flightSpeed, 20, 250); 
-
-            // --- 4. CONTROLES Y ROTACIÓN ---
-            const turnSpeed = 1.5;
-            const currentTurnSpeed = isGliding ? turnSpeed * 0.7 : turnSpeed;
-            
-            if (isStalling) {
-                targetRotation.x = THREE.MathUtils.lerp(targetRotation.x, -maxPitch * 0.6, 3 * delta);
-                targetRotation.y += yawInput * (currentTurnSpeed * 0.2) * delta; 
-                shakeIntensity += 0.2; 
-                uiStallWarning.style.display = 'block';
-            } else {
-                targetRotation.x += pitchInput * currentTurnSpeed * delta;
-                targetRotation.y += yawInput * currentTurnSpeed * delta;
-                uiStallWarning.style.display = 'none';
-
-                // SOFT STALL PROGRESIVO
-                if (isGliding) {
-                    let speedDeficit = Math.max(0, 110 - flightSpeed); 
-                    let softStallForce = (speedDeficit / 60) * 1.2; 
-                    targetRotation.x -= softStallForce * delta;
-                }
-            }
-
-            targetRotation.x = THREE.MathUtils.clamp(targetRotation.x, -maxPitch, maxPitch);
-            targetRotation.y = THREE.MathUtils.clamp(targetRotation.y, -maxYaw, maxYaw);
-
-            playerShip.rotation.x = THREE.MathUtils.lerp(playerShip.rotation.x, targetRotation.x, 5 * delta);
-            playerShip.rotation.y = THREE.MathUtils.lerp(playerShip.rotation.y, targetRotation.y, 5 * delta);
-            
-            let targetRoll = yawInput * Math.PI / 4;
-            if (isStalling) targetRoll += Math.sin(Date.now() * 0.02) * 0.3; 
-            playerShip.rotation.z = THREE.MathUtils.lerp(playerShip.rotation.z, targetRoll, 4 * delta);
-
-            let targetEngineScaleZ = 1.0;
-            let targetEngineOpacity = 0.9;
-            if (isGliding) {
-                targetEngineScaleZ = 0.0; targetEngineOpacity = 0.0;
-            } else {
-                targetEngineScaleZ = 0.5 + (flightSpeed / 100) + Math.random() * 0.2; 
-            }
-            engineMesh.scale.z = THREE.MathUtils.lerp(engineMesh.scale.z, targetEngineScaleZ, 15 * delta);
-            engineMesh.material.opacity = THREE.MathUtils.lerp(engineMesh.material.opacity, targetEngineOpacity, 10 * delta);
-
-            // --- 5. MOVIMIENTO EN EL ESPACIO ---
-            let forwardVector = new THREE.Vector3(0, 0, -1);
-            forwardVector.applyEuler(new THREE.Euler(playerShip.rotation.x, playerShip.rotation.y, 0)); 
-            
-            shipVelocity.copy(forwardVector).multiplyScalar(flightSpeed);
-
-            if (isGliding) {
-                currentGlideTime += delta;
-                let glideProgress = Math.min(currentGlideTime / glideDuration, 1.0);
-
-                if (shipVelocity.y > 0) shipVelocity.y *= (1.0 - glideProgress * 0.95); 
-
-                let progressiveDescentRate = THREE.MathUtils.lerp(2.0, 45.0, Math.pow(glideProgress, 1.5));
-                
-                const groundDistance = playerShip.position.y;
-                if (groundDistance < 20) {
-                    const groundFactor = (20 - groundDistance) / 20; 
-                    progressiveDescentRate *= (1 - (groundFactor * 0.85)); 
-                    
-                    if (Math.random() < groundFactor && flightSpeed > 50) {
-                        spawnGroundDust();
+            if (!isSkidding) {
+                if (currentFuel > 0) {
+                    currentFuel -= 5 * delta;
+                    if (currentFuel <= 0) {
+                        currentFuel = 0;
+                        isGliding = true;
                     }
                 }
 
-                shipVelocity.y -= progressiveDescentRate;
-            }
+                if (stabilityBoostTimer > 0) {
+                    stabilityBoostTimer -= delta;
+                }
 
-            playerShip.position.addScaledVector(shipVelocity, delta);
+                if (isGliding && !hasEngineDied) {
+                    hasEngineDied = true;
+                    shakeIntensity = 4;
+                    currentFov -= 5;
+                    triggerEngineDeathSmoke();
+                    uiFuelFill.classList.add("glide-warning");
+                    uiFuelContainer.classList.add("glide-border");
+                    setFuelStatus("EMERGENCIA: MODO PLANEO", "#ff0000");
+                    playerShip.getObjectByName("engineGlow").material.color.setHex(0x333333);
+                    clearFuelStatusTimeout();
+                }
 
-            if (playerShip.position.y > 150) playerShip.position.y = 150;
-            uiAltitude.innerText = Math.max(0, Math.floor(playerShip.position.y));
+                uiFuelFill.style.width = `${(currentFuel / maxFuel) * 100}%`;
 
-            // --- 6. COLISIÓN CON EL SUELO ---
-            if (playerShip.position.y <= 2) { 
+                let pitchInput = 0;
+                let yawInput = 0;
+
+                if (keys.w || keys.ArrowUp) pitchInput = -1;
+                if (keys.s || keys.ArrowDown) pitchInput = 1;
+                if (keys.a || keys.ArrowLeft) yawInput = 1;
+                if (keys.d || keys.ArrowRight) yawInput = -1;
+
+                if (touchState.active) {
+                    const deadZone = 0.12;
+                    const touchYaw = Math.abs(touchState.x) > deadZone ? -touchState.x : 0;
+                    const touchPitch = Math.abs(touchState.y) > deadZone ? touchState.y : 0;
+                    yawInput = Math.abs(touchYaw) > Math.abs(yawInput) ? touchYaw : yawInput;
+                    pitchInput = Math.abs(touchPitch) > Math.abs(pitchInput) ? touchPitch : pitchInput;
+                }
+
+                let targetSpeed = 120;
+                if (isGliding) {
+                    const glideProgress = Math.min(currentGlideTime / glideDuration, 1);
+                    targetSpeed = THREE.MathUtils.lerp(120, 60, Math.pow(glideProgress, 1.5));
+                }
+
+                const pitchAngle = playerShip.rotation.x;
+                targetSpeed += (-pitchAngle * 180);
+                targetSpeed -= Math.abs(playerShip.rotation.z) * 50;
+
+                if (flightSpeed < STALL_SPEED && stallTimer <= 0) stallTimer = 1;
+                if (stallTimer > 0) stallTimer -= delta;
+
+                const isStalling = stallTimer > 0;
+                const stabilityFactor = stabilityBoostTimer > 0 ? 0.72 : 1;
+                const speedAccel = isStalling ? 0.6 : 2.0;
+                flightSpeed = THREE.MathUtils.lerp(flightSpeed, targetSpeed, delta * speedAccel);
+                flightSpeed = THREE.MathUtils.clamp(flightSpeed, 20, 250);
+
+                const turnSpeed = 1.5 * stabilityFactor;
+                const currentTurnSpeed = isGliding ? turnSpeed * 0.7 : turnSpeed;
+
+                if (isStalling) {
+                    targetRotation.x = THREE.MathUtils.lerp(targetRotation.x, -maxPitch * 0.6, 3 * delta);
+                    targetRotation.y += yawInput * (currentTurnSpeed * 0.2) * delta;
+                    shakeIntensity += 0.2;
+                    uiStallWarning.style.display = "block";
+                } else {
+                    targetRotation.x += pitchInput * currentTurnSpeed * delta;
+                    targetRotation.y += yawInput * currentTurnSpeed * delta;
+                    uiStallWarning.style.display = "none";
+
+                    if (isGliding) {
+                        const speedDeficit = Math.max(0, 110 - flightSpeed);
+                        const softStallForce = (speedDeficit / 60) * 1.2 * stabilityFactor;
+                        targetRotation.x -= softStallForce * delta;
+                    }
+                }
+
+                targetRotation.x = THREE.MathUtils.clamp(targetRotation.x, -maxPitch, maxPitch);
+
+                playerShip.rotation.x = THREE.MathUtils.lerp(playerShip.rotation.x, targetRotation.x, 5 * delta);
+                playerShip.rotation.y = THREE.MathUtils.lerp(playerShip.rotation.y, targetRotation.y, 5 * delta);
+
+                let targetRoll = yawInput * Math.PI / 4;
+                if (isStalling) targetRoll += Math.sin(Date.now() * 0.02) * 0.3;
+                playerShip.rotation.z = THREE.MathUtils.lerp(playerShip.rotation.z, targetRoll, 4 * delta);
+
+                const targetEngineScaleZ = isGliding ? 0 : 0.5 + (flightSpeed / 100) + Math.random() * 0.2;
+                const targetEngineOpacity = isGliding ? 0 : 0.9;
+                engineMesh.scale.z = THREE.MathUtils.lerp(engineMesh.scale.z, targetEngineScaleZ, 15 * delta);
+                engineMesh.material.opacity = THREE.MathUtils.lerp(engineMesh.material.opacity, targetEngineOpacity, 10 * delta);
+
+                const forwardVector = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(playerShip.rotation.x, playerShip.rotation.y, 0));
+                shipVelocity.copy(forwardVector).multiplyScalar(flightSpeed);
+
+                if (isGliding) {
+                    currentGlideTime += delta;
+                    const glideProgress = Math.min(currentGlideTime / glideDuration, 1);
+
+                    if (shipVelocity.y > 0) shipVelocity.y *= (1 - glideProgress * 0.95);
+                    let progressiveDescentRate = THREE.MathUtils.lerp(2, 45, Math.pow(glideProgress, 1.5));
+                    const groundDistance = playerShip.position.y;
+                    if (groundDistance < 20) {
+                        const groundFactor = (20 - groundDistance) / 20;
+                        progressiveDescentRate *= (1 - (groundFactor * 0.85));
+                        if (Math.random() < groundFactor && flightSpeed > 50) spawnGroundDust();
+                    }
+                    shipVelocity.y -= progressiveDescentRate;
+                }
+
+                playerShip.position.addScaledVector(shipVelocity, delta);
+                if (playerShip.position.y > 150) playerShip.position.y = 150;
+                uiAltitude.innerText = Math.max(0, Math.floor(playerShip.position.y));
+
+                if (playerShip.position.y <= 2) {
+                    playerShip.position.y = 2;
+                    isSkidding = true;
+                    shakeIntensity = 8;
+                    uiStallWarning.style.display = "none";
+                    triggerEngineDeathSmoke();
+                    setFuelStatus("DERRAPANDO - IMPACTO CRÍTICO", "#ff3333");
+                    clearFuelStatusTimeout();
+                }
+            } else {
+                flightSpeed -= 60 * delta;
+                if (flightSpeed <= 0) {
+                    flightSpeed = 0;
+                    gameOver();
+                    return;
+                }
+
+                targetRotation.x = 0;
+                playerShip.rotation.x = THREE.MathUtils.lerp(playerShip.rotation.x, 0, 10 * delta);
+                playerShip.rotation.z = THREE.MathUtils.lerp(playerShip.rotation.z, 0, 10 * delta);
+
+                const forwardVector = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0));
+                shipVelocity.copy(forwardVector).multiplyScalar(flightSpeed);
+                shipVelocity.y = 0;
+
+                playerShip.position.addScaledVector(shipVelocity, delta);
                 playerShip.position.y = 2;
-                gameOver();
+                uiAltitude.innerText = 0;
+
+                if (flightSpeed > 10) {
+                    spawnSparks(Math.ceil((flightSpeed / 120) * 3));
+                    if (Math.random() < 0.4) spawnGroundDust();
+                    shakeIntensity = (flightSpeed / 120) * 2;
+                }
+
+                engineMesh.scale.z = THREE.MathUtils.lerp(engineMesh.scale.z, 0, 15 * delta);
+                engineMesh.material.opacity = THREE.MathUtils.lerp(engineMesh.material.opacity, 0, 10 * delta);
             }
 
-            // --- 7. ACTUALIZACIONES VARIAS ---
+            updateWorldObjects(delta);
+            updateWind(delta);
+            updateScenery();
+            updateMinimap();
+            updateMissionToast();
+            updateCommonVisuals(delta);
+            updateScoreHud();
+        }
+
+        function updateCommonVisuals(delta) {
             groundGrid.position.x = Math.floor(playerShip.position.x / 200) * 200;
             groundGrid.position.z = Math.floor(playerShip.position.z / 200) * 200;
-            
+
             dropShadow.position.x = playerShip.position.x;
             dropShadow.position.z = playerShip.position.z;
-            let shadowScale = Math.max(0.1, 1 - (playerShip.position.y / 80));
+            const shadowScale = Math.max(0.1, 1 - (playerShip.position.y / 80));
             dropShadow.scale.set(shadowScale, shadowScale, shadowScale);
 
             const linePositions = dropLine.geometry.attributes.position.array;
-            linePositions[0] = playerShip.position.x; linePositions[1] = playerShip.position.y; linePositions[2] = playerShip.position.z;
-            linePositions[3] = playerShip.position.x; linePositions[4] = 0.5; linePositions[5] = playerShip.position.z;
+            linePositions[0] = playerShip.position.x;
+            linePositions[1] = playerShip.position.y;
+            linePositions[2] = playerShip.position.z;
+            linePositions[3] = playerShip.position.x;
+            linePositions[4] = 0.5;
+            linePositions[5] = playerShip.position.z;
             dropLine.geometry.attributes.position.needsUpdate = true;
 
-            if (isGliding) {
+            if (isGliding || isSkidding) {
                 dropLine.material.color.setHex(0xff4444);
-                uiHudDescent.style.color = "#ff4444"; uiHudPower.style.color = "#ff4444"; uiHudPower.style.borderColor = "#ff4444";
+                uiHudDescent.style.color = "#ff4444";
+                uiHudPower.style.color = "#ff4444";
+                uiHudPower.style.borderColor = "#ff4444";
                 playerShip.getObjectByName("hudRing").material.color.setHex(0xff4444);
-                uiMinimapPlayer.style.borderBottomColor = "#ff4444"; uiMinimapContainer.style.borderColor = "rgba(255, 68, 68, 0.4)";
+                uiMinimapPlayer.style.borderBottomColor = "#ff4444";
+                uiMinimapContainer.style.borderColor = "rgba(255, 68, 68, 0.4)";
             } else {
                 dropLine.material.color.setHex(0x00ffaa);
-                uiHudDescent.style.color = "#00ffaa"; uiHudPower.style.color = "#00ffaa"; uiHudPower.style.borderColor = "rgba(0, 255, 170, 0.5)";
+                uiHudDescent.style.color = "#00ffaa";
+                uiHudPower.style.color = "#00ffaa";
+                uiHudPower.style.borderColor = "rgba(0, 255, 170, 0.5)";
                 playerShip.getObjectByName("hudRing").material.color.setHex(0x00ffaa);
-                uiMinimapPlayer.style.borderBottomColor = "#00ffaa"; uiMinimapContainer.style.borderColor = "rgba(0, 255, 170, 0.4)";
+                uiMinimapPlayer.style.borderBottomColor = "#00ffaa";
+                uiMinimapContainer.style.borderColor = "rgba(0, 255, 170, 0.4)";
             }
 
             uiHudDescent.innerText = `Vy: ${shipVelocity.y.toFixed(1)}`;
             uiHudPower.innerText = `VEL: ${Math.floor(flightSpeed)}`;
-            uiHudAngle.innerText = `ANG: ${(playerShip.rotation.x * 180 / Math.PI).toFixed(0)}º`; 
+            uiHudAngle.innerText = `ANG: ${(playerShip.rotation.x * 180 / Math.PI).toFixed(0)}º`;
 
-            const hw = window.innerWidth / 2; const hh = window.innerHeight / 2;
+            const hw = window.innerWidth / 2;
+            const hh = window.innerHeight / 2;
             const shipScreenPos = playerShip.position.clone().project(camera);
-            const sX = (shipScreenPos.x * hw) + hw; const sY = -(shipScreenPos.y * hh) + hh;
+            const sx = (shipScreenPos.x * hw) + hw;
+            const sy = -(shipScreenPos.y * hh) + hh;
 
-            uiHudPower.style.left = `${sX - 90}px`; uiHudPower.style.top = `${sY}px`;
-            uiHudAngle.style.left = `${sX + 90}px`; uiHudAngle.style.top = `${sY}px`;
+            uiHudPower.style.left = `${sx - 90}px`;
+            uiHudPower.style.top = `${sy}px`;
+            uiHudAngle.style.left = `${sx + 90}px`;
+            uiHudAngle.style.top = `${sy}px`;
 
             const midScreenPos = new THREE.Vector3(playerShip.position.x, playerShip.position.y / 2, playerShip.position.z).project(camera);
-            uiHudDescent.style.left = `${(midScreenPos.x * hw) + hw}px`; uiHudDescent.style.top = `${-(midScreenPos.y * hh) + hh}px`;
+            uiHudDescent.style.left = `${(midScreenPos.x * hw) + hw}px`;
+            uiHudDescent.style.top = `${-(midScreenPos.y * hh) + hh}px`;
 
-            totalDistanceMoved += (flightSpeed * delta);
-            score = Math.floor(totalDistanceMoved / 10);
-            uiScore.innerText = score;
-
-            updateFuels(delta); updateWind(delta); updateScenery(); updateMinimap(); updateParticles(delta);
-
-            // --- 8. CÁMARA FOLLOW Y GAMEFEEL ---
             let camHeightOffset = 15;
             let camDistanceOffset = 45;
-            
-            if(playerShip.position.y < 20) camHeightOffset = Math.max(5, playerShip.position.y * 0.7);
-            
-            if(isGliding) {
-                let glideProgress = Math.min(currentGlideTime / glideDuration, 1.0);
-                camHeightOffset += (glideProgress * 15); 
-                camDistanceOffset += (glideProgress * 15); 
+            if (playerShip.position.y < 20 && !isSkidding) camHeightOffset = Math.max(5, playerShip.position.y * 0.7);
+            if (isGliding || isSkidding) {
+                const glideProgress = Math.min(currentGlideTime / glideDuration, 1);
+                camHeightOffset += glideProgress * 15;
+                camDistanceOffset += glideProgress * 15;
+            }
+            if (isSkidding) {
+                camHeightOffset = THREE.MathUtils.lerp(camHeightOffset, 5, delta * 2);
             }
 
             const cameraOffset = new THREE.Vector3(0, camHeightOffset, camDistanceOffset);
             cameraOffset.applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0));
             const targetCameraPos = playerShip.position.clone().add(cameraOffset);
-            
             camera.position.lerp(targetCameraPos, 4 * delta);
-            
+
             const lookTarget = playerShip.position.clone().add(new THREE.Vector3(0, 0, -50).applyEuler(new THREE.Euler(0, playerShip.rotation.y, 0)));
             camera.lookAt(lookTarget);
 
@@ -1057,9 +1870,8 @@
             }
 
             let targetFov = 60 + (flightSpeed - 60) * 0.2;
-            if (isStalling) targetFov -= 15; 
-            if (playerShip.position.y < 10) targetFov += 10; 
-            
+            if (stallTimer > 0 && !isSkidding) targetFov -= 15;
+            if (playerShip.position.y < 10) targetFov += 10;
             currentFov = THREE.MathUtils.lerp(currentFov, targetFov, delta * 3);
             if (Math.abs(camera.fov - currentFov) > 0.1) {
                 camera.fov = currentFov;
@@ -1067,17 +1879,49 @@
             }
         }
 
+        function updateScoreHud() {
+            totalDistanceMoved = accumulatedDistance;
+            score = Math.max(score, Math.floor(totalDistanceMoved / 10));
+            bestDiscoveredDistance = Math.max(bestDiscoveredDistance, Math.floor(-playerShip.position.z));
+            uiScore.innerText = Math.floor(score);
+            uiDiscoverDistance.innerText = bestDiscoveredDistance;
+            uiFuelFill.style.width = `${(currentFuel / maxFuel) * 100}%`;
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            screenGameOver.classList.remove("hidden");
+            uiFinalScore.innerText = `Distancia Total: ${Math.floor(bestDiscoveredDistance)} m`;
+            uiFinalMissionSummary.innerText = `Misiones completadas: ${missionState.completedCount} | Progreso actual: ${missionState.progress}/${missionState.activeMission.requiredCount} | Coleccionables encontrados: ${missionState.totalCollectibles}`;
+            uiStallWarning.style.display = "none";
+            uiHudPower.style.display = "none";
+            uiHudAngle.style.display = "none";
+            uiHudDescent.style.display = "none";
+            uiMinimapContainer.style.display = "none";
+        }
+
+        const clock = new THREE.Clock();
+        let accumulatedDistance = 0;
+
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
 
+            updateParticles(delta);
+            updateMissionToast();
+
             if (isPlaying) {
+                accumulatedDistance += flightSpeed * delta;
+                score = Math.max(score, Math.floor(accumulatedDistance / 10));
                 updateFlightPhysics(delta);
-            } else {
-                camera.position.x = Math.sin(Date.now() * 0.0005) * 50;
-                camera.position.z = Math.cos(Date.now() * 0.0005) * 50;
-                camera.position.y = 20;
-                camera.lookAt(0, 10, 0);
+                bestDiscoveredDistance = Math.max(bestDiscoveredDistance, Math.floor(-playerShip.position.z));
+                uiScore.innerText = Math.floor(score);
+                uiDiscoverDistance.innerText = bestDiscoveredDistance;
+            } else if (playerShip) {
+                camera.position.x = playerShip.position.x + Math.sin(Date.now() * 0.0005) * 40;
+                camera.position.z = playerShip.position.z + Math.cos(Date.now() * 0.0005) * 40;
+                camera.position.y = 10;
+                camera.lookAt(playerShip.position);
             }
 
             renderer.render(scene, camera);
@@ -1090,7 +1934,6 @@
         }
 
         window.onload = init;
-
     </script>
 </body>
 </html>
