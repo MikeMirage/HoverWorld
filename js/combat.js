@@ -8,6 +8,11 @@
         bolts: [],
         shots: [],
         fx: [],
+        fighters: [],
+        externalTargets: null,
+        quiet: false,
+        dogfight: null,
+        survive: null,
         drones: [],
         hazards: [],
         pieces: [],
@@ -294,6 +299,8 @@
 
     function targetsForAssist() {
         const list = [];
+        if (C.externalTargets) C.externalTargets().forEach((t) => list.push(t.pos));
+        C.fighters.forEach((f) => { if (f.alive) list.push(f.mesh.position); });
         C.drones.forEach((d) => { if (d.alive) list.push(d.mesh.position); });
         C.mines.forEach((m) => list.push(m.mesh.position));
         C.missiles.forEach((m) => list.push(m.mesh.position));
@@ -324,6 +331,22 @@
     }
 
     function boltHits(b) {
+        if (C.externalTargets) {
+            for (const t of C.externalTargets()) {
+                if (segmentHit(b, t.pos, t.radius)) {
+                    t.hit();
+                    return true;
+                }
+            }
+        }
+        for (const f of C.fighters) {
+            if (f.alive && segmentHit(b, f.mesh.position, 8)) {
+                f.hp -= 1;
+                if (f.hp <= 0) killFighter(f);
+                else { GameAudio.play("hit"); f.flash = 0.15; }
+                return true;
+            }
+        }
         for (const d of C.drones) {
             if (d.alive && segmentHit(b, d.mesh.position, 8)) {
                 d.hp -= 1;
@@ -430,7 +453,7 @@
             if (!d.alive) { C.drones.splice(i, 1); continue; }
             const toPlayer = d.mesh.position.z - playerShip.position.z;
             // Drones cruise toward the player while weaving, then peel off past.
-            d.mesh.position.z += 70 * delta;
+            d.mesh.position.z += 45 * delta;
             d.mesh.position.x = d.base.x + Math.sin(t * 1.4 + d.phase) * 12;
             const targetY = THREE.MathUtils.clamp(playerShip.position.y, 20, 120);
             d.mesh.position.y += (targetY + Math.sin(t * 2 + d.phase) * 6 - d.mesh.position.y) * Math.min(1, delta * 0.8);
@@ -440,7 +463,7 @@
                 if (d.fireTimer <= 0 && d.fired < 2) {
                     d.fired += 1;
                     d.fireTimer = 1.6 + Math.random();
-                    fireShot(d.mesh.position, aimAtPlayer(d.mesh.position, 210), 210, 15);
+                    fireShot(d.mesh.position, aimAtPlayer(d.mesh.position, 140), 140, 15);
                     GameAudio.play("enemyShot");
                 }
             }
@@ -516,7 +539,7 @@
             const r = 9 + rand(baseZ * 0.3 + i) * 3;
             meshes.push(buildPillar(x, z, h, r, mat));
             addHazard({ type: "cyl", x, z, r: r * 0.95, h, label: "COLISION CON PILAR", group: baseZ });
-            if (i < 5 && typeof createBoostRingObject === "function") {
+            if (i % 2 === 1 && i < 5 && typeof createBoostRingObject === "function") {
                 const ringPos = new THREE.Vector3(laneX - side * 6, 34 + (i % 2) * 6, z - 35);
                 const ring = createBoostRingObject(ringPos, side * 0.35);
                 scene.add(ring.mesh);
@@ -598,7 +621,7 @@
                 meshes.push(mesh);
                 addHazard({ type: "cyl", x, z, r: 12, h, label: "COLISION CON CAÑÓN", group: baseZ });
             });
-            if (i % 2 === 1 && typeof createBoostRingObject === "function") {
+            if (i === 4 && typeof createBoostRingObject === "function") {
                 const ring = createBoostRingObject(new THREE.Vector3(laneX, 26 + Math.sin(i) * 4, z), 0);
                 scene.add(ring.mesh);
                 worldObjects.push(ring);
@@ -610,10 +633,10 @@
     function spawnSetPiecesAhead(playerChunk, chunkDepth) {
         if (C.boss) return;
         for (let chunk = playerChunk + 3; chunk <= playerChunk + 4; chunk++) {
-            if (C.pieceChunks.has(chunk) || chunk % 2 !== 0) continue;
+            if (C.pieceChunks.has(chunk) || chunk % 3 !== 0) continue;
             C.pieceChunks.add(chunk);
             const r = rand(chunk * 7.7 + C.tier);
-            if (r < 0.15) continue;
+            if (r < 0.35 || C.quiet) continue;
             const baseZ = -(chunk * chunkDepth) - 40;
             const laneX = (Math.floor(rand(chunk * 3.3) * 5) - 2) * 35;
             const roll = rand(chunk * 1.9 + 4);
@@ -672,6 +695,112 @@
             if (!removeGroups.has(C.pieces[i].group)) continue;
             C.pieces[i].meshes.forEach((m) => scene.remove(m));
             C.pieces.splice(i, 1);
+        }
+    }
+
+
+    // ---------- enemy fighters (dogfight missions) ----------
+    function buildFighterMesh() {
+        const g = buildDroneMesh();
+        g.scale.setScalar(2.1);
+        const fin = new THREE.Mesh(new THREE.BoxGeometry(0.25, 2.2, 1.8), shared.droneWing);
+        fin.position.set(0, 1.1, 2.2);
+        g.add(fin);
+        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.6, 8, 1, true), shared.flameMat);
+        flame.rotation.x = -Math.PI / 2;
+        flame.position.z = 4.3;
+        g.add(flame);
+        return g;
+    }
+
+    function spawnFighter() {
+        const mesh = buildFighterMesh();
+        const p = playerShip.position;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        mesh.position.set(p.x + side * (60 + Math.random() * 80), THREE.MathUtils.clamp(p.y + 10, 40, 110), p.z - 380 - Math.random() * 120);
+        scene.add(mesh);
+        const f = { mesh, alive: true, hp: 2 + Math.floor(C.tier / 2), t: Math.random() * 10, fireTimer: 2 + Math.random() * 2, flash: 0, vel: new THREE.Vector3(0, 0, -60), missionObject: null };
+        if (C.dogfight && C.dogfight.onSpawn) f.missionObject = C.dogfight.onSpawn(f);
+        C.fighters.push(f);
+        return f;
+    }
+
+    function killFighter(f) {
+        f.alive = false;
+        explode(f.mesh.position, 1.6, true);
+        scene.remove(f.mesh);
+        GameAudio.play("explode");
+        shakeIntensity += 0.6;
+        awardStylePoints("DERRIBO", 120, f.mesh.position, "#ff9f70");
+        if (C.dogfight) {
+            C.dogfight.kills += 1;
+            if (C.dogfight.onKill) C.dogfight.onKill(f);
+        }
+    }
+
+    function updateFighters(delta) {
+        const df = C.dogfight;
+        if (df && df.kills + C.fighters.filter((f) => f.alive).length < df.total && C.fighters.filter((f) => f.alive).length < 2) {
+            df.spawnTimer -= delta;
+            if (df.spawnTimer <= 0) { df.spawnTimer = 2.5; spawnFighter(); }
+        }
+        const p = playerShip.position;
+        const playerFwd = new THREE.Vector3(0, 0, -1).applyEuler(makeFlightEuler(0, flightState.yaw, 0));
+        for (let i = C.fighters.length - 1; i >= 0; i--) {
+            const f = C.fighters[i];
+            if (!f.alive) { C.fighters.splice(i, 1); continue; }
+            f.t += delta;
+            // Evasive target point ahead of the player: weave so the chase stays readable.
+            const ahead = 150 + Math.sin(f.t * 0.5) * 50;
+            const target = p.clone().addScaledVector(playerFwd, ahead)
+                .add(new THREE.Vector3(Math.sin(f.t * 0.8) * 45, Math.sin(f.t * 1.1) * 14, 0));
+            target.y = THREE.MathUtils.clamp(target.y, 25, 120);
+            const desired = target.sub(f.mesh.position);
+            const dist = desired.length();
+            const speed = THREE.MathUtils.clamp(flightSpeed * (dist > 260 ? 0.6 : dist < 90 ? 1.35 : 1.0), 40, 180);
+            f.vel.lerp(desired.normalize().multiplyScalar(speed), Math.min(1, delta * 1.2));
+            f.mesh.position.addScaledVector(f.vel, delta);
+            const look = f.mesh.position.clone().add(f.vel);
+            f.mesh.lookAt(look);
+            f.mesh.rotateY(Math.PI);
+            f.mesh.rotateZ(Math.sin(f.t * 0.8) * 0.5);
+            // Tail gunner: occasional shots back at the pursuer.
+            f.fireTimer -= delta;
+            const toPlayer = p.distanceTo(f.mesh.position);
+            if (f.fireTimer <= 0 && toPlayer < 320) {
+                f.fireTimer = 2.8 + Math.random() * 1.5 - C.tier * 0.15;
+                fireShot(f.mesh.position, aimAtPlayer(f.mesh.position, 130), 130, 12);
+                GameAudio.play("enemyShot");
+            }
+            if (toPlayer < 9) { killFighter(f); damagePlayer(30, "COLISION CON CAZA"); }
+        }
+    }
+
+    function startDogfight(total, handlers = {}) {
+        C.dogfight = { total, kills: 0, spawnTimer: 0.5, onKill: handlers.onKill, onSpawn: handlers.onSpawn };
+    }
+
+    function stopDogfight() {
+        C.dogfight = null;
+        C.fighters.forEach((f) => { if (f.alive) { scene.remove(f.mesh); } });
+        C.fighters = [];
+    }
+
+    // ---------- hostile airspace (survive missions) ----------
+    function setSurvive(active) {
+        C.survive = active ? { waveTimer: 1 } : null;
+    }
+
+    function updateSurvive(delta) {
+        if (!C.survive) return;
+        C.survive.waveTimer -= delta;
+        if (C.survive.waveTimer <= 0) {
+            C.survive.waveTimer = Math.max(2.6, 4.2 - C.tier * 0.25);
+            const p = playerShip.position;
+            const fwd = new THREE.Vector3(0, 0, -1).applyEuler(makeFlightEuler(0, flightState.yaw, 0));
+            const center = p.clone().addScaledVector(fwd, 420).add(new THREE.Vector3((Math.random() - 0.5) * 80, 0, 0));
+            center.y = THREE.MathUtils.clamp(p.y + 8, 35, 110);
+            spawnDroneWave(center, true, Math.random() < 0.5 ? "v" : "line");
         }
     }
 
@@ -876,7 +1005,7 @@
         // Slipstream: the boss leaves boost rings in its wake so a good chase line catches up.
         boss.wakeTimer -= delta;
         if (boss.wakeTimer <= 0 && gap > 140 && typeof createBoostRingObject === "function") {
-            boss.wakeTimer = 2.6;
+            boss.wakeTimer = 4;
             const ring = createBoostRingObject(boss.mesh.position.clone().add(new THREE.Vector3(0, -1, 70)), 0);
             scene.add(ring.mesh);
             worldObjects.push(ring);
@@ -896,7 +1025,7 @@
                     const origin = tur.getWorldPosition(new THREE.Vector3());
                     const n = boss.phase === 2 ? 5 : 3;
                     for (let k = 0; k < n; k++) {
-                        fireShot(origin, aimAtPlayer(origin, 200, (k - (n - 1) / 2) * 0.09), 200, 20);
+                        fireShot(origin, aimAtPlayer(origin, 145, (k - (n - 1) / 2) * 0.1), 145, 20);
                     }
                 });
                 GameAudio.play("enemyShot");
@@ -991,8 +1120,8 @@
         for (let i = C.missiles.length - 1; i >= 0; i--) {
             const m = C.missiles[i];
             m.life -= delta;
-            const desired = playerShip.position.clone().sub(m.mesh.position).normalize().multiplyScalar(190);
-            m.vel.lerp(desired, Math.min(1, delta * 0.9));
+            const desired = playerShip.position.clone().sub(m.mesh.position).normalize().multiplyScalar(125);
+            m.vel.lerp(desired, Math.min(1, delta * 0.7));
             m.mesh.position.addScaledVector(m.vel, delta);
             m.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), m.vel.clone().normalize());
             if (m.mesh.position.distanceTo(playerShip.position) < 4.5) {
@@ -1064,7 +1193,9 @@
         C.missiles.forEach((m) => scene.remove(m.mesh));
         C.pieces.forEach((p) => p.meshes.forEach((m) => scene.remove(m)));
         if (C.boss) scene.remove(C.boss.mesh);
+        C.fighters.forEach((f) => scene.remove(f.mesh));
         C.drones = []; C.mines = []; C.missiles = []; C.pieces = []; C.hazards = []; C.boss = null;
+        C.fighters = []; C.dogfight = null; C.survive = null; C.quiet = false;
         updateBossHud();
         updateHud(0);
     }
@@ -1079,18 +1210,21 @@
         }
         if (!isPlaying) return;
         C.fireCooldown -= delta;
-        if (C.firing && C.fireCooldown <= 0 && !isSkidding && !isControlledLanding) {
+        C.lock = findLock(FORWARD.clone().applyEuler(makeFlightEuler(flightState.pitch, flightState.yaw, 0)));
+        const wantsFire = C.firing || (C.autoFire && C.lock);
+        if (wantsFire && C.fireCooldown <= 0 && !isSkidding && !isControlledLanding) {
             C.fireCooldown = 0.13;
             firePlayer();
         }
         updateBolts(delta);
         updateShots(delta);
         updateDrones(delta, t);
+        updateFighters(delta);
+        updateSurvive(delta);
         updatePieces();
         updateBoss(delta);
         updateMinesMissiles(delta, t);
         updateHud(delta);
-        C.lock = findLock(FORWARD.clone().applyEuler(makeFlightEuler(flightState.pitch, flightState.yaw, 0)));
         if (isPlaying && !isSkidding && !isControlledLanding) {
             const hit = checkHazards(playerShip.position);
             if (hit) triggerCriticalCrash(hit, "#ff7a5c");
@@ -1100,6 +1234,12 @@
     window.Combat = {
         init, reset, update, spawnSetPiecesAhead, spawnBoss, clearHazardsNear, rimMaterial,
         setFiring(v) { C.firing = v; },
+        setExternalTargets(fn) { C.externalTargets = fn; },
+        setQuiet(v) { C.quiet = !!v; },
+        setAutoFire(v) { C.autoFire = !!v; },
+        get autoFire() { return !!C.autoFire; },
+        startDogfight, stopDogfight, setSurvive,
+        get fighters() { return C.fighters; },
         isBossActive() { return !!C.boss; },
         get timeScale() { return C.timeScale; },
         get shield() { return C.shield; },

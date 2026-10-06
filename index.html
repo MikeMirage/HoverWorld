@@ -1190,6 +1190,90 @@
             background: linear-gradient(180deg, #ffe36a 0%, #ffb800 100%) !important;
             color: #132235 !important;
         }
+
+        .results-stars {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            font-size: 44px;
+            line-height: 1;
+        }
+        .results-stars span {
+            color: rgba(255, 255, 255, 0.15);
+            transform: scale(0.4);
+            animation: starPop 0.45s cubic-bezier(.2, 1.6, .4, 1) forwards;
+        }
+        .results-stars span.on { color: #ffd23a; text-shadow: 0 0 18px rgba(255, 200, 60, 0.7); }
+        @keyframes starPop { to { transform: scale(1); } }
+
+        #start-screen .start-hero .start-hero-badges { display: none; }
+        .level-strip-wrap {
+            margin-top: auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .level-strip-title {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #eaf6ff;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        }
+        .level-strip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .level-node {
+            position: relative;
+            width: 56px;
+            height: 56px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            font-size: 20px;
+            font-weight: 900;
+            color: #fff;
+            background: rgba(6, 18, 30, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .level-node:hover { background: rgba(6, 18, 30, 0.6); }
+        .level-node .lv-stars { font-size: 9px; letter-spacing: 1px; color: rgba(255, 255, 255, 0.3); }
+        .level-node .lv-stars b { color: #ffd23a; font-weight: 400; }
+        .level-node.selected { border-color: #ffd23a; transform: scale(1.12); box-shadow: 0 0 0 4px rgba(255, 210, 58, 0.25), 0 8px 18px rgba(0, 0, 0, 0.35); }
+        .level-node.locked { opacity: 0.45; font-size: 16px; }
+        .level-node.boss { border-color: rgba(255, 110, 90, 0.6); }
+        .level-link { width: 14px; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.25); }
+        .level-link.done { background: #ffd23a; }
+        .level-strip-missions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            max-width: 92vw;
+        }
+        .level-strip-missions span {
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(6, 18, 30, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 11px;
+            font-weight: 700;
+            color: #dceaf6;
+            backdrop-filter: blur(6px);
+        }
+        #start-screen.sheet-open .level-strip-wrap { display: none; }
         .ach-head {
             margin: 10px 0 2px;
             font-size: 11px;
@@ -1522,7 +1606,7 @@
 
         .hud-icon-btn {
             position: absolute;
-            right: calc(var(--safe-right) + 72px);
+            right: calc(var(--safe-right) + 12px);
             bottom: calc(var(--safe-bottom) + 12px);
             width: 48px;
             height: 48px;
@@ -2157,7 +2241,7 @@
             }
 
             .hud-icon-btn {
-                right: calc(var(--safe-right) + 86px);
+                right: calc(var(--safe-right) + 24px);
                 bottom: calc(var(--safe-bottom) + 24px);
             }
 
@@ -2465,6 +2549,11 @@
                     <span id="start-showcase-world">Frontier Reach</span>
                 </div>
             </div>
+            <div class="level-strip-wrap">
+                <div class="level-strip-title" id="level-strip-title">Frontier Reach</div>
+                <div class="level-strip" id="level-strip"></div>
+                <div class="level-strip-missions" id="level-strip-missions"></div>
+            </div>
             <div class="start-hero-badges">
                 <div class="hero-badge">
                     <span class="hero-badge-label">Mejor vuelo</span>
@@ -2556,14 +2645,16 @@
         <div class="results-card" id="results-card">
             <div class="results-kicker" id="results-world">Frontier Reach</div>
             <h2 id="game-over-title">Aterrizaje Forzoso</h2>
+            <div class="results-stars" id="results-stars" hidden></div>
             <div class="results-score"><span id="final-score">0</span><small>PTS</small></div>
             <div class="new-record" id="results-record" hidden>NUEVO RÉCORD</div>
             <div class="results-stats" id="final-mission-summary"></div>
             <div class="results-rewards" id="results-rewards"></div>
             <div class="results-unlock" id="results-unlock" hidden></div>
             <div class="results-tip" id="results-tip"></div>
-            <button id="restart-btn" class="card-btn primary">VOLAR DE NUEVO</button>
-            <button id="menu-btn" class="card-btn secondary">VOLVER AL HANGAR</button>
+            <button id="next-level-btn" class="card-btn primary" hidden>SIGUIENTE NIVEL ▶</button>
+            <button id="restart-btn" class="card-btn primary">REINTENTAR</button>
+            <button id="menu-btn" class="card-btn secondary">MAPA DE NIVELES</button>
         </div>
     </div>
 
@@ -2575,7 +2666,10 @@
                 <button type="button" id="pause-audio-btn" class="card-btn secondary">Sonido: ON</button>
                 <button type="button" id="pause-music-btn" class="card-btn secondary">Música: ON</button>
             </div>
-            <button type="button" id="pause-quality-btn" class="card-btn secondary">Gráficos: Alta</button>
+            <div class="card-row">
+                <button type="button" id="pause-quality-btn" class="card-btn secondary">Gráficos: Alta</button>
+                <button type="button" id="pause-autofire-btn" class="card-btn secondary">Disparo auto: ON</button>
+            </div>
             <button type="button" id="pause-restart-btn" class="card-btn secondary">REINICIAR VUELO</button>
             <button type="button" id="pause-menu-btn" class="card-btn secondary">ABANDONAR AL HANGAR</button>
         </div>
@@ -2713,18 +2807,18 @@
         const STORAGE_KEY = "hoverworld-save-v1";
 
         const FLIGHT_TUNING = {
-            baseSpeed: 120,
+            baseSpeed: 88,
             minSpeed: 20,
-            maxSpeed: 250,
-            stallSpeed: 40,
-            turnSpeed: 1.5,
-            maxPitch: Math.PI / 3,
-            fuelBurnRate: 5,
-            bankDragPenalty: 50,
-            climbSpeedPenalty: 180,
-            diveSpeedBoost: 180,
+            maxSpeed: 165,
+            stallSpeed: 30,
+            turnSpeed: 1.35,
+            maxPitch: Math.PI / 4,
+            fuelBurnRate: 3.6,
+            bankDragPenalty: 18,
+            climbSpeedPenalty: 70,
+            diveSpeedBoost: 70,
             glideDuration: 10.0,
-            glideSpeedMin: 60,
+            glideSpeedMin: 52,
             glideDescentMin: 2,
             glideDescentMax: 45,
             skidDeceleration: 60,
@@ -2747,7 +2841,7 @@
             statuettes: {
                 id: "statuettes",
                 type: "collect",
-                title: "Recolecta 3 Estatuillas",
+                title: "Recolecta {n} Estatuillas",
                 description: "Sigue la primera ruta dorada y recoge las tres estatuillas del aire.",
                 requiredCount: 3,
                 spawnPattern: "arc",
@@ -2757,7 +2851,7 @@
             letters: {
                 id: "letters",
                 type: "collect",
-                title: "Recoge 5 Letras Doradas",
+                title: "Recoge {n} Letras Doradas",
                 description: "Las letras flotan en distintas líneas. Elige bien tu ruta para atraparlas todas.",
                 requiredCount: 5,
                 spawnPattern: "laneSplit",
@@ -2787,7 +2881,7 @@
             puzzle: {
                 id: "puzzle",
                 type: "collect",
-                title: "Ensambla 7 Piezas",
+                title: "Ensambla {n} Piezas",
                 description: "Explora una zona más abierta y encuentra las siete piezas del puzzle repartidas en el cielo.",
                 requiredCount: 7,
                 spawnPattern: "wideSearch",
@@ -2797,7 +2891,7 @@
             trucks: {
                 id: "trucks",
                 type: "crash",
-                title: "Impacta 3 Camiones",
+                title: "Impacta {n} Camiones",
                 description: "Cuando llegue el momento, derrapa sobre los camiones marcados y conviértelos en parte del recorrido.",
                 requiredCount: 3,
                 spawnPattern: "groundCluster",
@@ -2827,12 +2921,52 @@
             arch_run: {
                 id: "arch_run",
                 type: "collect",
-                title: "Bajo los Arcos",
-                description: "Vuela a ras de suelo y atraviesa 4 arcos de roca sin rozar la piedra.",
+                title: "Cruza {n} Arcos de Roca",
+                description: "Vuela a ras de suelo y atraviesa los arcos de roca sin rozar la piedra.",
                 requiredCount: 4,
                 spawnPattern: "arches",
                 targetPrefab: "arch",
                 reward: { fuel: 26, score: 300, stability: 1.0 }
+            },
+            shoot_targets: {
+                id: "shoot_targets",
+                type: "shoot",
+                title: "Destruye {n} Dianas",
+                description: "Dispara a las cápsulas rojas flotantes. La mira se fija sola al acercarte.",
+                requiredCount: 5,
+                spawnPattern: "targets",
+                targetPrefab: "target_pod",
+                reward: { fuel: 20, score: 220, stability: 0.8 }
+            },
+            flyby_towers: {
+                id: "flyby_towers",
+                type: "flyby",
+                title: "Vuelo Rasante: {n} Torres",
+                description: "Pasa junto a cada torre marcada volando por debajo de 40 m.",
+                requiredCount: 3,
+                spawnPattern: "landmarks",
+                targetPrefab: "tower",
+                reward: { fuel: 22, score: 240, stability: 0.8 }
+            },
+            dogfight: {
+                id: "dogfight",
+                type: "dogfight",
+                title: "Derriba {n} Cazas",
+                description: "Persigue a los cazas enemigos, colócate detrás y dispara. Cuidado con su artillero de cola.",
+                requiredCount: 3,
+                spawnPattern: "none",
+                targetPrefab: "fighter",
+                reward: { fuel: 30, score: 360, stability: 1.0 }
+            },
+            survive: {
+                id: "survive",
+                type: "survive",
+                title: "Cruza la Zona Hostil",
+                description: "Aguanta {n} s bajo fuego enemigo. Esquiva los disparos y derriba lo que puedas.",
+                requiredCount: 25,
+                spawnPattern: "none",
+                targetPrefab: "none",
+                reward: { fuel: 30, score: 320, stability: 1.0 }
             },
             boss_dreadnought: {
                 id: "boss_dreadnought",
@@ -2878,17 +3012,17 @@
                 visualPrefab: "spitfire_starter",
                 livery: { primary: 0x2f6690, secondary: 0xece4d2, accent: 0xf2b630 },
                 handling: {
-                    baseSpeed: 120,
-                    stallSpeed: 40,
-                    turnSpeed: 1.5,
-                    maxPitch: Math.PI / 3,
-                    climbSpeedPenalty: 180,
-                    diveSpeedBoost: 180,
-                    bankDragPenalty: 50
+                    baseSpeed: 88,
+                    stallSpeed: 30,
+                    turnSpeed: 1.35,
+                    maxPitch: Math.PI / 4,
+                    climbSpeedPenalty: 70,
+                    diveSpeedBoost: 70,
+                    bankDragPenalty: 18
                 },
                 fuel: {
                     capacity: 100,
-                    burnRate: 5
+                    burnRate: 3.6
                 },
                 glide: {
                     duration: 10.0
@@ -2917,17 +3051,17 @@
                 visualPrefab: "spitfire_scout",
                 livery: { primary: 0xc23a2c, secondary: 0xf4f1ea, accent: 0x1f2a36 },
                 handling: {
-                    baseSpeed: 128,
-                    stallSpeed: 38,
-                    turnSpeed: 1.72,
-                    maxPitch: Math.PI / 3,
-                    climbSpeedPenalty: 168,
-                    diveSpeedBoost: 190,
-                    bankDragPenalty: 44
+                    baseSpeed: 94,
+                    stallSpeed: 29,
+                    turnSpeed: 1.55,
+                    maxPitch: Math.PI / 4,
+                    climbSpeedPenalty: 65,
+                    diveSpeedBoost: 78,
+                    bankDragPenalty: 16
                 },
                 fuel: {
                     capacity: 82,
-                    burnRate: 5.4
+                    burnRate: 3.9
                 },
                 glide: {
                     duration: 12.0
@@ -2958,8 +3092,8 @@
             visualPrefab: "cargo_twin",
             livery: { primary: 0x5f6f3c, secondary: 0xe8dcc0, accent: 0xd9532b },
             price: { credits: 1500, parts: 6 },
-            handling: { baseSpeed: 112, stallSpeed: 36, turnSpeed: 1.3, maxPitch: Math.PI / 3, climbSpeedPenalty: 196, diveSpeedBoost: 170, bankDragPenalty: 58 },
-            fuel: { capacity: 150, burnRate: 5.2 },
+            handling: { baseSpeed: 82, stallSpeed: 28, turnSpeed: 1.2, maxPitch: Math.PI / 4, climbSpeedPenalty: 75, diveSpeedBoost: 62, bankDragPenalty: 22 },
+            fuel: { capacity: 150, burnRate: 3.8 },
             glide: { duration: 15.0 },
             landing: { maxSpeed: 122, minHold: 1.5, windowAltitude: 18, maxPitch: 0.3, maxRoll: 0.35, maxVerticalSpeed: 18, hardCrashSpeed: 165, hardCrashVerticalSpeed: 36, hardCrashPitch: 0.46, hardCrashRoll: 0.56 },
             camera: { modeDefault: "arcade" },
@@ -3377,6 +3511,7 @@
         let maxPitch = FLIGHT_TUNING.maxPitch;
         const flightState = { pitch: 0, yaw: 0, roll: 0 };
         const smoothedInput = { pitch: 0, yaw: 0 };
+        let stallBuildUp = 0;
         let saveState = null;
         let currentAircraftProfile = null;
         let currentWorldProfile = null;
@@ -3635,6 +3770,8 @@
             merged.records = { ...base.records, ...(incoming.records || {}) };
             merged.totals = { ...base.totals, ...(incoming.totals || {}) };
             merged.hints = { ...base.hints, ...(incoming.hints || {}) };
+            merged.levels = { ...(incoming.levels || {}) };
+            merged.selectedLevel = { ...(incoming.selectedLevel || {}) };
             merged.achievements = { ...base.achievements, ...(incoming.achievements || {}) };
             return merged;
         }
@@ -3662,6 +3799,118 @@
 
         function getSelectedAircraftProfile() {
             return AIRCRAFT_PROFILES[saveState.selectedAircraftId] || AIRCRAFT_PROFILES.falcon_mk1;
+        }
+
+
+        // Five levels per world. "id:count" overrides the mission's required count.
+        const WORLD_LEVELS = {
+            frontier_reach: [
+                ["statuettes:3", "beacon_run"],
+                ["letters:5", "shoot_targets:4"],
+                ["flyby_towers:3", "puzzle:5"],
+                ["shoot_targets:6", "dogfight:2", "runway_landing"],
+                ["dogfight:2", "boss_dreadnought"]
+            ],
+            ember_vale: [
+                ["beacon_run", "arch_run:3"],
+                ["shoot_targets:6", "cargo_run"],
+                ["flyby_towers:4", "letters:5"],
+                ["survive:20", "dogfight:3"],
+                ["arch_run:4", "boss_dreadnought"]
+            ],
+            frostline_expanses: [
+                ["letters:5", "flyby_towers:3"],
+                ["statuettes:4", "shoot_targets:6"],
+                ["puzzle:6", "aerial_refuel"],
+                ["dogfight:3", "survive:22"],
+                ["shoot_targets:8", "boss_dreadnought"]
+            ],
+            neon_tide: [
+                ["beacon_run", "statuettes:4"],
+                ["flyby_towers:4", "shoot_targets:6"],
+                ["cargo_run", "letters:6"],
+                ["survive:25", "dogfight:3"],
+                ["dogfight:3", "boss_dreadnought"]
+            ],
+            obsidian_spine: [
+                ["trucks:3", "arch_run:3"],
+                ["shoot_targets:7", "beacon_run"],
+                ["flyby_towers:5", "survive:25"],
+                ["dogfight:4", "trucks:3"],
+                ["survive:20", "boss_dreadnought", "runway_landing"]
+            ],
+            sunscar_dunes: [
+                ["puzzle:5", "arch_run:3"],
+                ["shoot_targets:7", "flyby_towers:4"],
+                ["beacon_run", "letters:6"],
+                ["dogfight:4", "survive:25"],
+                ["arch_run:5", "boss_dreadnought", "runway_landing"]
+            ],
+            verdant_relics: [
+                ["beacon_run", "arch_run:4"],
+                ["flyby_towers:5", "letters:6"],
+                ["shoot_targets:8", "cargo_run"],
+                ["survive:28", "dogfight:4"],
+                ["dogfight:3", "boss_dreadnought"]
+            ],
+            crimson_archipelago: [
+                ["letters:6", "shoot_targets:6"],
+                ["trucks:3", "puzzle:6"],
+                ["flyby_towers:5", "aerial_refuel"],
+                ["dogfight:5", "survive:28"],
+                ["shoot_targets:10", "boss_dreadnought"]
+            ],
+            thunder_plate: [
+                ["sky_race", "shoot_targets:6"],
+                ["survive:25", "flyby_towers:5"],
+                ["dogfight:5", "sky_race"],
+                ["survive:32", "shoot_targets:10"],
+                ["dogfight:4", "boss_dreadnought"]
+            ],
+            aurora_crown: [
+                ["statuettes:5", "flyby_towers:5"],
+                ["letters:7", "shoot_targets:8"],
+                ["puzzle:7", "aerial_refuel"],
+                ["survive:35", "dogfight:6"],
+                ["dogfight:5", "boss_dreadnought"]
+            ]
+        };
+
+        function getWorldLevels(world) {
+            return WORLD_LEVELS[world.id] || [world.missionPool];
+        }
+
+        function getLevelProgress(worldId) {
+            saveState.levels = saveState.levels || {};
+            if (!saveState.levels[worldId]) saveState.levels[worldId] = { unlocked: 1, stars: [] };
+            return saveState.levels[worldId];
+        }
+
+        function getSelectedLevelIndex(world = currentWorldProfile) {
+            saveState.selectedLevel = saveState.selectedLevel || {};
+            const progress = getLevelProgress(world.id);
+            const levels = getWorldLevels(world);
+            const idx = saveState.selectedLevel[world.id] ?? Math.min(progress.unlocked - 1, levels.length - 1);
+            return THREE.MathUtils.clamp(idx, 0, Math.min(progress.unlocked - 1, levels.length - 1));
+        }
+
+        function buildLevelMissions(world, levelIndex) {
+            const level = getWorldLevels(world)[levelIndex] || world.missionPool;
+            return level.map((entry) => {
+                const [id, countStr] = entry.split(":");
+                const base = MISSION_LIBRARY[id];
+                if (!base) return null;
+                const count = countStr ? parseInt(countStr, 10) : base.requiredCount;
+                return Object.assign({}, base, {
+                    requiredCount: count,
+                    title: base.title.replace("{n}", count),
+                    description: base.description.replace("{n}", count)
+                });
+            }).filter(Boolean);
+        }
+
+        function getLevelPar(levelIndex, missionCount) {
+            return 350 + missionCount * 260 + levelIndex * 180;
         }
 
         let menuWorldPreviewId = null;
@@ -3706,7 +3955,7 @@
                 },
                 fuel: {
                     capacity: profile.fuel.capacity + (fuelLevel * 20),
-                    burnRate: Math.max(3.5, profile.fuel.burnRate - fuelLevel * 0.18)
+                    burnRate: Math.max(2.6, profile.fuel.burnRate - fuelLevel * 0.15)
                 },
                 glide: {
                     duration: profile.glide.duration + (fuelLevel * 0.6)
@@ -3766,7 +4015,7 @@
             fuelBurnRate = stats.fuel.burnRate;
             bankDragPenalty = stats.handling.bankDragPenalty;
             maxPitch = stats.handling.maxPitch;
-            missionDefs = currentWorldProfile.missionPool.map((id) => MISSION_LIBRARY[id]).filter(Boolean);
+            missionDefs = buildLevelMissions(currentWorldProfile, getSelectedLevelIndex(currentWorldProfile));
             supportFuelCap = currentWorldProfile.environmentModifiers.supportFuelCap;
             uiCameraModeToggle.innerText = cameraMode === "arcade" ? "Camara: Arcade Horizon" : "Camara: Ace Combat";
             uiGlideSlider.value = glideDuration.toFixed(0);
@@ -3852,6 +4101,35 @@
             GameAudio.play("unlock");
         }
 
+        function renderLevelStrip(world, worldLocked) {
+            const strip = document.getElementById("level-strip");
+            const levels = getWorldLevels(world);
+            const progress = getLevelProgress(world.id);
+            const selected = worldLocked ? -1 : getSelectedLevelIndex(world);
+            document.getElementById("level-strip-title").textContent = `${world.displayName} · ${Weather.describe(world.themeId)}`;
+            let html = "";
+            levels.forEach((level, i) => {
+                const locked = worldLocked || i >= progress.unlocked;
+                const stars = progress.stars[i] || 0;
+                const isBoss = level.some((entry) => entry.startsWith("boss"));
+                if (i > 0) html += `<div class="level-link ${progress.stars[i - 1] ? "done" : ""}"></div>`;
+                html += `<button type="button" class="level-node ${i === selected ? "selected" : ""} ${locked ? "locked" : ""} ${isBoss ? "boss" : ""}" data-level="${i}" ${locked ? "disabled" : ""}>`
+                    + `${locked ? "🔒" : isBoss ? "☠" : i + 1}<span class="lv-stars">${[0, 1, 2].map((k) => (k < stars ? "<b>★</b>" : "★")).join("")}</span></button>`;
+            });
+            strip.innerHTML = html;
+            strip.querySelectorAll(".level-node").forEach((node) => {
+                node.addEventListener("click", () => {
+                    saveState.selectedLevel = saveState.selectedLevel || {};
+                    saveState.selectedLevel[world.id] = parseInt(node.dataset.level, 10);
+                    saveProgress();
+                    GameAudio.play("select");
+                    refreshMetaUi();
+                });
+            });
+            const missionsEl = document.getElementById("level-strip-missions");
+            missionsEl.innerHTML = worldLocked ? "" : buildLevelMissions(world, selected).map((m) => `<span>${m.title}</span>`).join("");
+        }
+
         function renderMetaStats(target, items) {
             target.innerHTML = items.map((item) => `<div class="meta-stat">${item.label}<strong>${item.value}</strong></div>`).join("");
         }
@@ -3888,8 +4166,9 @@
             const worldTheme = getWorldTheme(world);
             const worldBest = saveState.records.worldBest?.[world.id] || 0;
             uiMetaWorldName.innerText = worldLocked ? `🔒 ${world.displayName}` : world.displayName;
+            const previousWorldId = getWorldIds()[getWorldIds().indexOf(world.id) - 1];
             uiMetaWorldCopy.innerText = worldLocked
-                ? `Bloqueado · vuela ${WORLD_UNLOCK_DISTANCE[world.id]} m en un solo vuelo para desbloquearlo (récord actual: ${saveState.records.bestDistance} m).`
+                ? `Bloqueado · supera el Nivel 5 (jefe) de ${WORLD_PROFILES[previousWorldId]?.displayName || "el mundo anterior"} para desbloquearlo.`
                 : world.blurb;
             renderMetaStats(uiMetaWorldStats, [
                 { label: "Dificultad", value: getWorldDifficulty(world) },
@@ -3897,9 +4176,11 @@
                 { label: "Clima", value: Weather.describe(world.themeId) || worldTheme?.displayName || "Base" },
                 { label: "Tu récord", value: worldBest ? `${worldBest.toLocaleString("es-ES")} pts` : "—" }
             ]);
+            renderLevelStrip(world, worldLocked);
             const startBtn = document.getElementById("start-btn");
             startBtn.disabled = worldLocked || aircraftLocked;
-            startBtn.textContent = worldLocked ? `🔒 ${WORLD_UNLOCK_DISTANCE[world.id]} m` : aircraftLocked ? "🔒 AVIÓN BLOQUEADO" : "JUGAR";
+            const levelNumber = worldLocked ? 1 : getSelectedLevelIndex(world) + 1;
+            startBtn.textContent = worldLocked ? "🔒 MUNDO BLOQUEADO" : aircraftLocked ? "🔒 AVIÓN BLOQUEADO" : `JUGAR · NIVEL ${levelNumber}`;
 
             const routeHtml = world.missionPool.map((id, index) => `<span><strong>${index + 1}. ${MISSION_LIBRARY[id]?.title || id}</strong><em>${world.featuredChallenges[index] || ""}</em></span>`).join("");
             uiMetaMissionBoard.innerHTML = `<div class="ach-head">Contratos del día</div>${renderContractsHtml()}<div class="ach-head">Ruta de ${world.displayName}</div>${routeHtml}`;
@@ -3986,7 +4267,7 @@
             const unlockedBefore = new Set([...saveState.unlockedAircraftIds, ...saveState.unlockedWorldIds]);
             const creditsEarned = Math.floor(bestDiscoveredDistance / 12) + (missionState.completedCount * 40) + Math.floor(runStats.styleScore / 25);
             const discoveryEarned = missionState.completedCount * 3 + Math.floor(bestDiscoveredDistance / 180);
-            const partsEarned = result === "landing" ? 3 : result === "skid" ? 1 : 0;
+            const partsEarned = missionState.levelComplete ? 2 + (result === "landing" ? 1 : 0) : result === "landing" ? 1 : 0;
 
             saveState.currencies.credits += creditsEarned;
             saveState.currencies.discovery += discoveryEarned;
@@ -4000,12 +4281,11 @@
             saveState.totals.runs += 1;
             if (result === "landing") saveState.records.landings += 1;
             else if (result === "crash") saveState.records.crashes += 1;
-            else saveState.records.skids += 1;
+            else if (result === "skid") saveState.records.skids += 1;
 
             if (saveState.records.bestDistance >= 1500 && !saveState.unlockedAircraftIds.includes("swift_scout")) {
                 saveState.unlockedAircraftIds.push("swift_scout");
             }
-            updateWorldUnlocksFromDistance();
             saveProgress();
             const unlocks = [...saveState.unlockedAircraftIds, ...saveState.unlockedWorldIds]
                 .filter((id) => !unlockedBefore.has(id))
@@ -4362,7 +4642,7 @@
             glide: () => "Motor apagado: planea, nivela las alas y baja suave para aterrizar sin estrellarte.",
             style: () => "Vuela rasante o roza montañas para sumar bonus y encadenar combos x5.",
             fire: () => (window.matchMedia("(pointer: coarse)").matches
-                ? "Mantén pulsado el botón rojo de mira para disparar a drones, minas y al jefe."
+                ? "Apunta con la retícula: al fijar un blanco (se pone roja) disparas solo. También puedes usar el botón de mira."
                 : "Mantén ESPACIO para disparar. Los láseres se ajustan solos a objetivos cercanos.")
         };
 
@@ -4484,6 +4764,7 @@
             uiPauseMusicBtn.textContent = prefs.music > 0 ? "Música: ON" : "Música: OFF";
             uiMenuAudioBtn.textContent = prefs.muted ? "🔇" : "🔊";
             document.getElementById("pause-quality-btn").textContent = PostFX.getQuality() === "high" ? "Gráficos: Alta" : "Gráficos: Rendimiento";
+            document.getElementById("pause-autofire-btn").textContent = Combat.autoFire ? "Disparo auto: ON" : "Disparo auto: OFF";
         }
 
         function formatRunTime(seconds) {
@@ -4503,11 +4784,58 @@
             tick();
         }
 
+        // Stars, next-level and next-world unlocks for a cleared level.
+        let lastPlayedLevelIndex = 0;
+        function getSelectedLevelIndexForResults() { return lastPlayedLevelIndex; }
+
+        function settleLevel() {
+            if (!missionState.levelComplete) return null;
+            const world = currentWorldProfile;
+            const levelIndex = getSelectedLevelIndex(world);
+            const levels = getWorldLevels(world);
+            const par = getLevelPar(levelIndex, missionDefs.length);
+            const stars = score >= par * 1.6 ? 3 : score >= par ? 2 : 1;
+            const progress = getLevelProgress(world.id);
+            const previousStars = progress.stars[levelIndex] || 0;
+            progress.stars[levelIndex] = Math.max(previousStars, stars);
+            progress.unlocked = Math.max(progress.unlocked, Math.min(levels.length, levelIndex + 2));
+            let worldUnlocked = null;
+            if (levelIndex === levels.length - 1) {
+                const ids = getWorldIds();
+                const next = ids[ids.indexOf(world.id) + 1];
+                if (next && !saveState.unlockedWorldIds.includes(next)) {
+                    saveState.unlockedWorldIds.push(next);
+                    worldUnlocked = WORLD_PROFILES[next].displayName;
+                }
+            } else {
+                saveState.selectedLevel = saveState.selectedLevel || {};
+                saveState.selectedLevel[world.id] = levelIndex + 1;
+            }
+            return {
+                levelIndex, stars, newBest: stars > previousStars, par,
+                bonusCredits: 60 + stars * 40 + levelIndex * 20,
+                hasNext: levelIndex < levels.length - 1,
+                worldUnlocked
+            };
+        }
+
         function renderResults(result, rewards, previous) {
-            const titles = { landing: "Aterrizaje Perfecto", crash: "Impacto Crítico", skid: "Aterrizaje Forzoso" };
-            uiResultsCard.className = `results-card result-${result}`;
-            uiGameOverTitle.innerText = titles[result] || titles.skid;
-            uiResultsWorld.innerText = currentWorldProfile.displayName;
+            const titles = { landing: "Aterrizaje Perfecto", crash: "Nivel Fallido", skid: "Nivel Fallido", level: "¡Nivel Completado!" };
+            const level = rewards.level;
+            const success = !!level;
+            uiResultsCard.className = `results-card result-${success ? "landing" : result}`;
+            uiGameOverTitle.innerText = success ? "¡Nivel Completado!" : (titles[result] || titles.skid);
+            uiResultsWorld.innerText = `${currentWorldProfile.displayName} · Nivel ${getSelectedLevelIndexForResults() + 1}`;
+            const starsEl = document.getElementById("results-stars");
+            starsEl.hidden = !success;
+            if (success) {
+                starsEl.innerHTML = [0, 1, 2].map((i) => `<span class="${i < level.stars ? "on" : ""}" style="animation-delay:${0.9 + i * 0.25}s">★</span>`).join("");
+                setTimeout(() => GameAudio.play("unlock"), 900);
+            }
+            const nextBtn = document.getElementById("next-level-btn");
+            nextBtn.hidden = !(success && level.hasNext);
+            document.getElementById("restart-btn").textContent = success ? "REPETIR NIVEL" : "REINTENTAR";
+            document.getElementById("restart-btn").className = success && level.hasNext ? "card-btn secondary" : "card-btn primary";
             uiFinalScore.textContent = "0";
             uiResultsRecord.hidden = !(Math.floor(score) > previous.bestScore && previous.runs > 0);
             const stats = [
@@ -4519,7 +4847,7 @@
                 ["Tiempo", formatRunTime(runStats.time)]
             ];
             uiFinalMissionSummary.innerHTML = stats.map(([label, value]) => `<div class="results-stat"><span>${label}</span><strong>${value}</strong></div>`).join("");
-            const chips = [`+${rewards.credits} créditos`, `+${rewards.discovery} discovery`];
+            const chips = [`+${rewards.credits + (level ? level.bonusCredits : 0)} créditos`, `+${rewards.discovery} discovery`];
             if (rewards.parts > 0) chips.push(`+${rewards.parts} parts`);
             uiResultsRewards.innerHTML = chips.map((chip) => `<div class="reward-chip">${chip}</div>`).join("");
             const unlockLines = [];
@@ -4532,7 +4860,9 @@
                 skid: "Consejo: para aterrizar, nivela el avión, reduce velocidad por debajo de la zona verde y mantén la aproximación ~2 s.",
                 landing: "¡Buen piloto! Los aterrizajes controlados dan Parts para mejorar tu avión en el Taller."
             };
-            uiResultsTip.textContent = tips[result] || "";
+            uiResultsTip.textContent = success
+                ? (level.stars < 3 ? `Consigue ${Math.round(level.par * (level.stars < 2 ? 1 : 1.6))} pts para la siguiente estrella: encadena combos y derriba enemigos.` : "¡Perfecto! Tres estrellas.")
+                : (tips[result] || "");
             if (rewards.unlocks.length || (rewards.meta || []).length) setTimeout(() => GameAudio.play("unlock"), 700);
         }
 
@@ -4561,6 +4891,7 @@
             createWind();
             createVisualEffects();
             Combat.init();
+            Combat.setExternalTargets(getShootableTargets);
             Weather.init(scene);
             currentWorldProfile = getSelectedWorldProfile();
             applyWorldTheme(currentWorldProfile);
@@ -4576,8 +4907,13 @@
             document.addEventListener("pointercancel", onPointerUp);
 
             document.getElementById("start-btn").addEventListener("click", startGame);
-            document.getElementById("restart-btn").addEventListener("click", startGame);
+            document.getElementById("restart-btn").addEventListener("click", () => {
+                saveState.selectedLevel = saveState.selectedLevel || {};
+                saveState.selectedLevel[currentWorldProfile.id] = lastPlayedLevelIndex;
+                startGame();
+            });
             uiMenuBtn.addEventListener("click", returnToHangar);
+            document.getElementById("next-level-btn").addEventListener("click", () => startGame());
             uiPauseBtn.addEventListener("click", () => setPaused(!isPaused));
             const fireBtn = document.getElementById("fire-btn");
             const setFire = (on) => { Combat.setFiring(on); fireBtn.classList.toggle("pressed", on); };
@@ -4587,6 +4923,18 @@
             document.getElementById("pause-restart-btn").addEventListener("click", () => { setPaused(false); startGame(); });
             document.getElementById("pause-menu-btn").addEventListener("click", returnToHangar);
             uiPauseAudioBtn.addEventListener("click", () => { GameAudio.toggleMute(); refreshAudioButtons(); });
+            const autoFirePref = (() => { try { return localStorage.getItem("hoverworld-autofire"); } catch (e) { return null; } })();
+            Combat.setAutoFire(autoFirePref === null ? window.matchMedia("(pointer: coarse)").matches : autoFirePref === "1");
+            document.getElementById("pause-autofire-btn").addEventListener("click", () => {
+                Combat.setAutoFire(!Combat.autoFire);
+                try { localStorage.setItem("hoverworld-autofire", Combat.autoFire ? "1" : "0"); } catch (e) { /* ignore */ }
+                refreshAudioButtons();
+            });
+            // Developer tuning sliders are only exposed with ?dev in the URL.
+            if (!/[?&]dev\b/.test(location.search)) {
+                uiSettingsButton.style.display = "none";
+                uiSettingsPanel.style.display = "none";
+            }
             document.getElementById("pause-quality-btn").addEventListener("click", () => {
                 PostFX.setQuality(PostFX.getQuality() === "high" ? "low" : "high");
                 refreshAudioButtons();
@@ -5361,6 +5709,7 @@
             shipVelocity.set(0, 0, 0);
             shakeIntensity = 0;
             stallTimer = 0;
+            stallBuildUp = 0;
             currentGlideTime = 0;
             stabilityBoostTimer = 0;
             letterCursor = 0;
@@ -5371,7 +5720,8 @@
             endSequence.startedAt = 0;
 
             resetWorldObjects();
-            Combat.reset(THREE.MathUtils.clamp(9 - currentWorldProfile.environmentModifiers.supportFuelCap, 1, 5));
+            lastPlayedLevelIndex = getSelectedLevelIndex();
+            Combat.reset(THREE.MathUtils.clamp(9 - currentWorldProfile.environmentModifiers.supportFuelCap, 1, 5) + lastPlayedLevelIndex * 0.4);
             resetMissionState();
 
             engineSmokeParticles.forEach(resetParticle);
@@ -5423,6 +5773,7 @@
             missionState.totalCollectibles = 0;
             missionState.toastHideAt = 0;
             missionState.sequenceComplete = false;
+            missionState.levelComplete = false;
             missionState.lap = 1;
             missionState.runtime = createMissionRuntime();
             setMissionByIndex(0);
@@ -5445,6 +5796,30 @@
             raceBots = [];
             missionChunkQueue = [];
             missionChunksUsed = new Set();
+            Combat.stopDogfight();
+            Combat.setSurvive(false);
+            const missionType = missionState.activeMission.type;
+            Combat.setQuiet(["dogfight", "survive", "boss", "race", "landing"].includes(missionType));
+            if (missionType === "dogfight") {
+                Combat.startDogfight(missionState.activeMission.requiredCount, {
+                    onSpawn: (fighter) => {
+                        const object = { kind: "missionTarget", missionType: "dogfight", prefab: "fighter", mesh: fighter.mesh, collected: false, active: true, collisionRadius: 0, minimapClass: "mission-truck", rewardFuel: 0, rewardScore: 0 };
+                        worldObjects.push(object);
+                        activeMissionObjects.push(object);
+                        return object;
+                    },
+                    onKill: (fighter) => {
+                        if (fighter.missionObject) fighter.missionObject.collected = true;
+                        if (missionState.activeMission?.type !== "dogfight") return;
+                        missionState.progress += 1;
+                        updateMissionHud();
+                        if (missionState.progress >= missionState.activeMission.requiredCount) completeCurrentMission();
+                    }
+                });
+            } else if (missionType === "survive") {
+                Combat.setSurvive(true);
+                missionState.runtime.surviveTime = 0;
+            }
             showMissionToast(`Nueva misión: ${missionState.activeMission.title}`);
             if (isPlaying) GameAudio.play("missionStart");
             updateMissionHud();
@@ -5456,8 +5831,7 @@
             missionState.runtime.missionSettled = true;
             missionState.completedCount += 1;
             currentFuel = Math.min(maxFuel, currentFuel + mission.reward.fuel);
-            const lapMultiplier = 1 + ((missionState.lap || 1) - 1) * 0.5;
-            const missionScore = Math.round(mission.reward.score * lapMultiplier);
+            const missionScore = mission.reward.score;
             score += missionScore;
             stabilityBoostTimer = Math.max(stabilityBoostTimer, mission.reward.stability);
             uiFuelFill.style.filter = "brightness(1.8)";
@@ -5473,17 +5847,17 @@
             if (advance && !isLastMission) {
                 setMissionByIndex(missionState.sequenceIndex + 1);
                 ensureMissionTargetsAhead(true);
-            } else if (advance && mission.type !== "landing") {
-                missionState.lap = (missionState.lap || 1) + 1;
-                const lapBonus = 250 * (missionState.lap - 1);
-                score += lapBonus;
-                setMissionByIndex(0);
-                ensureMissionTargetsAhead(true);
-                setTimeout(() => {
-                    showMissionToast(`¡Ruta completada! Vuelta ${missionState.lap} · recompensas x${(1 + (missionState.lap - 1) * 0.5).toFixed(1)}`);
-                    showScorePopup(`+${lapBonus}`, "RUTA COMPLETADA", null, "#ffd27a", true);
-                    GameAudio.play("unlock");
-                }, 900);
+            } else if (isLastMission) {
+                // Level cleared. Landing levels end on touchdown; everything else wraps up here.
+                missionState.sequenceComplete = true;
+                missionState.levelComplete = true;
+                Combat.stopDogfight();
+                Combat.setSurvive(false);
+                updateMissionHud();
+                showMissionToast("¡NIVEL COMPLETADO!");
+                if (mission.type !== "landing") {
+                    setTimeout(() => { if (isPlaying) gameOver("level"); }, 1600);
+                }
             } else {
                 missionState.sequenceComplete = true;
                 updateMissionHud();
@@ -5599,6 +5973,7 @@
             if (mission.type === "refuel") return spawnRefuelMissionPattern(mission, chunkIndex);
             if (mission.type === "race") return spawnRaceMissionPattern(mission, chunkIndex);
             if (mission.type === "boss") return spawnBossMissionPattern(mission, chunkIndex);
+            if (mission.type === "dogfight" || mission.type === "survive") return 0;
 
             const positions = getPatternPositions(mission.spawnPattern, chunkIndex, remaining);
             let created = 0;
@@ -5724,6 +6099,14 @@
                     const lane = lanes[(chunkIndex + i) % lanes.length];
                     positions.push(new THREE.Vector3(lane, 34 + ((chunkIndex + i) % 3) * 12, baseZ - i * 55));
                 }
+            } else if (pattern === "targets") {
+                for (let i = 0; i < count; i++) {
+                    const x = (((chunkIndex * 53) + i * 89) % 260) - 130;
+                    positions.push(new THREE.Vector3(x, 30 + ((chunkIndex * 17 + i * 23) % 40), baseZ - i * 90));
+                }
+            } else if (pattern === "landmarks") {
+                const lane = ((chunkIndex * 61) % 5 - 2) * 45;
+                positions.push(new THREE.Vector3(lane, 0, baseZ - 40));
             } else if (pattern === "arches") {
                 for (let i = 0; i < count; i++) {
                     const lane = (((chunkIndex * 41) + i * 67) % 5 - 2) * 50;
@@ -5766,6 +6149,8 @@
             if (mission.targetPrefab === "letter") return createLetterObject(position);
             if (mission.targetPrefab === "puzzle") return createPuzzleObject(position, localIndex);
             if (mission.targetPrefab === "arch") return createArchObject(position);
+            if (mission.targetPrefab === "target_pod") return createTargetPodObject(position, localIndex);
+            if (mission.targetPrefab === "tower") return createTowerObject(position);
             return createTruckObject(position, localIndex);
         }
 
@@ -5829,18 +6214,18 @@
             if (isSkidding || isControlledLanding) return;
             const playerChunk = getPlayerChunk();
             for (let chunk = playerChunk + 2; chunk <= playerChunk + 4; chunk++) {
-                if (boostChunksUsed.has(chunk) || chunk % 2 === 0) continue;
+                if (boostChunksUsed.has(chunk) || chunk % 4 !== 1) continue;
                 boostChunksUsed.add(chunk);
-                const count = 4 + (chunk % 3);
+                const count = 3;
                 const baseZ = -(chunk * chunkDepth) - 60;
                 const startX = (((chunk * 37) % 5) - 2) * 45;
                 const startY = 30 + ((chunk * 13) % 40);
                 const curve = ((chunk % 4) - 1.5) / 1.5;
                 const laneX = (i) => THREE.MathUtils.clamp(startX + Math.sin(i * 0.45) * 26 * curve, -170, 170);
                 for (let i = 0; i < count; i++) {
-                    const pos = new THREE.Vector3(laneX(i), startY + Math.sin(i * 0.6 + chunk) * 6, baseZ - i * 38);
+                    const pos = new THREE.Vector3(laneX(i), startY + Math.sin(i * 0.6 + chunk) * 6, baseZ - i * 65);
                     const nextX = laneX(i + 1);
-                    const yaw = Math.atan2(-(nextX - pos.x), 38);
+                    const yaw = Math.atan2(-(nextX - pos.x), 65);
                     const ringObject = createBoostRingObject(pos, yaw);
                     scene.add(ringObject.mesh);
                     worldObjects.push(ringObject);
@@ -5850,10 +6235,10 @@
 
         function handleBoostRing(object) {
             object.collected = true;
-            boostTimer = Math.max(boostTimer, 1.4);
+            boostTimer = Math.max(boostTimer, 1.6);
             runStats.boostRings += 1;
-            flightSpeed = Math.min(maxFlightSpeed, flightSpeed + 35);
-            currentFov += 7;
+            flightSpeed = Math.min(maxFlightSpeed, flightSpeed + 12);
+            currentFov += 3;
             shakeIntensity += 0.35;
             GameAudio.play("boost");
             spawnPickupBurst(object.mesh.position, 0x9fefff, 14);
@@ -6334,6 +6719,90 @@
             return null;
         }
 
+        // Shootable target pod: must be destroyed with lasers (not by flying through).
+        function createTargetPodObject(position, index) {
+            const mesh = new THREE.Group();
+            const shell = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(3.6, 0),
+                Combat.rimMaterial(0xe8343c, 0xffd0c8, { emissive: 0x6a0810, emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.3, flat: true, rimStrength: 1.0 })
+            );
+            shell.castShadow = true;
+            const core = new THREE.Mesh(new THREE.SphereGeometry(1.4, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffe0a0 }));
+            const ringMat = new THREE.MeshStandardMaterial({ color: 0x2f3640, roughness: 0.4, metalness: 0.6 });
+            const ringA = new THREE.Mesh(new THREE.TorusGeometry(5, 0.35, 6, 32), ringMat);
+            ringA.rotation.x = Math.PI / 2;
+            const fins = new THREE.Group();
+            for (let k = 0; k < 4; k++) {
+                const fin = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.2, 1.6), ringMat);
+                fin.position.set(Math.cos(k * Math.PI / 2) * 4.8, 0, Math.sin(k * Math.PI / 2) * 4.8);
+                fins.add(fin);
+            }
+            mesh.add(shell, core, ringA, fins);
+            mesh.position.copy(position);
+            return {
+                kind: "missionTarget", missionType: "shoot", prefab: "target_pod", mesh, collected: false,
+                collisionRadius: 0, minimapClass: "mission-truck", rewardFuel: 4, rewardScore: 45,
+                baseY: position.y, phase: index * 1.3
+            };
+        }
+
+        function handleTargetDestroyed(object) {
+            if (object.collected) return;
+            object.collected = true;
+            missionState.progress += 1;
+            missionState.totalCollectibles += 1;
+            currentFuel = Math.min(maxFuel, currentFuel + object.rewardFuel);
+            Combat.explode(object.mesh.position.clone(), 1.2, true);
+            GameAudio.play("explode");
+            awardStylePoints("DIANA", object.rewardScore, object.mesh.position, "#ff9f70");
+            updateMissionHud();
+            if (missionState.progress >= missionState.activeMission.requiredCount) completeCurrentMission();
+        }
+
+        function getShootableTargets() {
+            const list = [];
+            for (const object of activeMissionObjects) {
+                if (object.prefab === "target_pod" && !object.collected) {
+                    list.push({ pos: object.mesh.position, radius: 6, hit: () => handleTargetDestroyed(object) });
+                }
+            }
+            return list;
+        }
+
+        // Landmark tower for low fly-by missions.
+        function createTowerObject(position) {
+            const mesh = new THREE.Group();
+            const metal = new THREE.MeshStandardMaterial({ color: 0xb8bec6, roughness: 0.45, metalness: 0.5, flatShading: true });
+            const red = new THREE.MeshStandardMaterial({ color: 0xd8432f, roughness: 0.5 });
+            const height = 46;
+            for (let s = 0; s < 4; s++) {
+                const seg = new THREE.Mesh(new THREE.CylinderGeometry(1.6 - s * 0.3, 2 - s * 0.3, height / 4, 6), s % 2 ? red : metal);
+                seg.position.y = height / 8 + s * height / 4;
+                seg.castShadow = true;
+                mesh.add(seg);
+            }
+            const dish = new THREE.Mesh(new THREE.SphereGeometry(3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.4), metal);
+            dish.rotation.x = Math.PI / 2;
+            dish.position.set(0, height * 0.8, 2);
+            mesh.add(dish);
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(5, 6, 2, 8), metal);
+            base.position.y = 1;
+            mesh.add(base);
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(1.1, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffb030 }));
+            beacon.position.y = height + 1;
+            mesh.add(beacon);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(32, 0.8, 6, 64), new THREE.MeshBasicMaterial({ color: 0xffc040, transparent: true, opacity: 0.75 }));
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0.6;
+            mesh.add(ring);
+            mesh.position.set(position.x, 0, position.z);
+            WorldGfx.addClearing(position.x, position.z, 40);
+            return {
+                kind: "missionTarget", missionType: "flyby", prefab: "tower", mesh, collected: false, active: true,
+                collisionRadius: 0, minimapClass: "mission-collect", rewardFuel: 6, rewardScore: 60, ring, beacon
+            };
+        }
+
         function createStatuetteObject(position) {
             const mesh = new THREE.Group();
             const gold = new THREE.MeshStandardMaterial({ color: 0xffd45a, emissive: 0xb07400, emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.35 });
@@ -6627,13 +7096,13 @@
                 const object = worldObjects[i];
                 updateWorldObjectMotion(object, delta);
 
-                if (object.collected && object.prefab !== "arch") {
+                if (object.collected && object.prefab !== "arch" && object.prefab !== "tower") {
                     scene.remove(object.mesh);
                     worldObjects.splice(i, 1);
                     continue;
                 }
 
-                if (object.prefab !== "boss" && (object.mesh.position.z > playerShip.position.z + 180 || object.mesh.position.distanceTo(playerShip.position) > 2400)) {
+                if (object.prefab !== "boss" && object.prefab !== "fighter" && (object.mesh.position.z > playerShip.position.z + 180 || object.mesh.position.distanceTo(playerShip.position) > 2400)) {
                     scene.remove(object.mesh);
                     worldObjects.splice(i, 1);
                     continue;
@@ -6656,7 +7125,21 @@
                 } else if (object.kind === "missionTarget") {
                     if (object.active === false) continue;
                     updateMissionTargetVisuals(object, delta);
-                    if (object.prefab === "arch") {
+                    if (object.prefab === "tower") {
+                        object.beacon.visible = Math.sin(performance.now() * 0.008) > 0;
+                        const horizontal = Math.hypot(playerShip.position.x - object.mesh.position.x, playerShip.position.z - object.mesh.position.z);
+                        if (!isSkidding && horizontal < 34 && playerShip.position.y < 42 && playerShip.position.y > 2.5) {
+                            object.active = false;
+                            object.collected = false;
+                            object.ring.material.color.setHex(0x8dff6a);
+                            object.beacon.material.color.setHex(0x8dff6a);
+                            object.beacon.visible = true;
+                            handleMissionCollect(object);
+                        }
+                    } else if (object.prefab === "target_pod") {
+                        object.mesh.rotation.y += delta * 1.4;
+                        object.mesh.position.y = object.baseY + Math.sin(performance.now() * 0.002 + object.phase) * 2.5;
+                    } else if (object.prefab === "arch") {
                         object.gate.material.opacity = 0.45 + 0.3 * Math.sin(performance.now() * 0.006);
                         const archResult = isSkidding || isControlledLanding ? null : testArch(object);
                         if (archResult === "pass") {
@@ -6683,6 +7166,15 @@
             }
 
             activeMissionObjects = activeMissionObjects.filter((object) => worldObjects.includes(object) && !object.collected);
+            if (missionState.activeMission?.type === "survive" && !missionState.runtime.missionSettled) {
+                missionState.runtime.surviveTime = (missionState.runtime.surviveTime || 0) + delta;
+                const seconds = Math.floor(missionState.runtime.surviveTime);
+                if (seconds !== missionState.progress) {
+                    missionState.progress = seconds;
+                    updateMissionHud();
+                }
+                if (missionState.runtime.surviveTime >= missionState.activeMission.requiredCount) completeCurrentMission();
+            }
             updateRaceBots(delta);
             ensureMissionTargetsAhead();
             spawnSupportFuelIfNeeded();
@@ -6797,7 +7289,7 @@
             missionState.progress += 1;
             missionState.totalCollectibles += 1;
             currentFuel = Math.min(maxFuel, currentFuel + object.rewardFuel);
-            const collectLabels = { statuette: "ESTATUILLA", letter: "LETRA", puzzle: "PIEZA", arch: "¡ARCO!" };
+            const collectLabels = { statuette: "ESTATUILLA", letter: "LETRA", puzzle: "PIEZA", arch: "¡ARCO!", tower: "RASANTE", target_pod: "DIANA" };
             awardStylePoints(collectLabels[object.prefab] || "OBJETIVO", object.rewardScore, object.mesh.position);
             GameAudio.play("pickup", runStats.combo);
             spawnPickupBurst(object.mesh.position, 0xffe36a, 24);
@@ -7382,15 +7874,17 @@
                 if (cargoPenaltyActive) targetSpeed -= 14;
                 if (boostTimer > 0) {
                     boostTimer -= delta;
-                    targetSpeed += 75;
+                    targetSpeed += 32;
                 }
 
-                if (flightSpeed < stallSpeed && stallTimer <= 0) stallTimer = 1;
+                // Stall only after a sustained low-speed moment, and recover quickly.
+                if (flightSpeed < stallSpeed) stallBuildUp += delta; else stallBuildUp = Math.max(0, stallBuildUp - delta * 2);
+                if (stallBuildUp > 0.7 && stallTimer <= 0) stallTimer = 0.8;
                 if (stallTimer > 0) stallTimer -= delta;
 
                 const isStalling = stallTimer > 0;
                 const stabilityFactor = stabilityBoostTimer > 0 ? 0.72 : 1;
-                const speedAccel = isStalling ? 0.6 : 2.0;
+                const speedAccel = isStalling ? 0.7 : (targetSpeed > flightSpeed ? 0.75 : 1.1);
                 flightSpeed = THREE.MathUtils.lerp(flightSpeed, targetSpeed, delta * speedAccel);
                 flightSpeed = THREE.MathUtils.clamp(flightSpeed, minFlightSpeed, maxFlightSpeed);
 
@@ -7398,17 +7892,21 @@
                 const currentTurnSpeed = (isGliding ? turnSpeed * 0.7 : turnSpeed) * (cargoPenaltyActive ? 0.86 : 1);
 
                 if (isStalling) {
-                    targetRotation.x = THREE.MathUtils.lerp(targetRotation.x, -maxPitch * 0.6, 3 * delta);
-                    targetRotation.y += yawInput * (currentTurnSpeed * 0.2) * delta;
-                    shakeIntensity += 0.2;
+                    targetRotation.x = THREE.MathUtils.lerp(targetRotation.x, -maxPitch * 0.4, 2 * delta);
+                    targetRotation.y += yawInput * (currentTurnSpeed * 0.5) * delta;
+                    shakeIntensity = Math.max(shakeIntensity, 0.6);
                     uiStallWarning.style.display = "block";
                 } else {
-                    targetRotation.x += pitchInput * currentTurnSpeed * delta;
+                    targetRotation.x += pitchInput * currentTurnSpeed * 0.75 * delta;
                     targetRotation.y += yawInput * currentTurnSpeed * delta;
                     uiStallWarning.style.display = "none";
+                    // Auto-level: with the stick centred the nose eases back to the horizon.
+                    if (Math.abs(pitchInput) < 0.05) targetRotation.x *= Math.max(0, 1 - delta * 0.9);
+                    // Stall warning assist: below a safe margin, gently lower the nose.
+                    if (flightSpeed < stallSpeed + 14 && targetRotation.x > 0) targetRotation.x -= delta * 0.35;
 
                     if (isGliding) {
-                        const speedDeficit = Math.max(0, 110 - flightSpeed);
+                        const speedDeficit = Math.max(0, FLIGHT_TUNING.baseSpeed * 0.9 - flightSpeed);
                         const softStallForce = (speedDeficit / 60) * 1.2 * stabilityFactor;
                         targetRotation.x -= softStallForce * delta;
                     }
@@ -7757,7 +8255,7 @@
                 shakeIntensity = THREE.MathUtils.lerp(shakeIntensity, 0, delta * 10);
             }
 
-            let targetFov = 60 + (flightSpeed - 60) * 0.2;
+            let targetFov = 58 + (flightSpeed - 60) * 0.12;
             if (stallTimer > 0 && !isSkidding && !isControlledLanding) targetFov -= 15;
             if (playerShip.position.y < 10) targetFov += 10;
             if (isControlledLanding) targetFov -= 6;
@@ -7782,7 +8280,14 @@
             endSequence.result = result;
             endSequence.startedAt = performance.now();
             const previousRecords = { bestScore: saveState.records.bestScore, runs: saveState.totals.runs };
+            const levelResult = settleLevel();
             const rewards = awardRunRewards(result);
+            rewards.level = levelResult;
+            if (levelResult) {
+                saveState.currencies.credits += levelResult.bonusCredits;
+                if (levelResult.worldUnlocked) rewards.unlocks.push(levelResult.worldUnlocked);
+                saveProgress();
+            }
             rewards.meta = evaluateMetaProgress(buildRunSummary());
             screenGameOver.classList.add("hidden");
             renderResults(result, rewards, previousRecords);
@@ -7868,6 +8373,7 @@
                 uiScore.innerText = Math.floor(score);
                 uiDiscoverDistance.innerText = bestDiscoveredDistance;
             } else if (endSequence.active && playerShip) {
+                if (endSequence.result === "level") playerShip.position.addScaledVector(shipVelocity, delta);
                 updateEndSequenceCamera(delta);
                 if (performance.now() - endSequence.startedAt >= endSequence.menuDelay * 1000) {
                     endSequence.active = false;
