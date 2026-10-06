@@ -2719,6 +2719,14 @@
                         <div class="upgrade-copy"><strong>Landing Suite</strong><span id="upgrade-landing-copy">Nivel 0 · aterrizaje más permisivo</span></div>
                         <button type="button" id="upgrade-landing-btn" class="meta-button">Mejorar</button>
                     </div>
+                    <div class="upgrade-row">
+                        <div class="upgrade-copy"><strong>🛡️ Blindaje</strong><span id="upgrade-shield-copy">Nivel 0</span></div>
+                        <button type="button" id="upgrade-shield-btn" class="meta-button">Mejorar</button>
+                    </div>
+                    <div class="upgrade-row">
+                        <div class="upgrade-copy"><strong>🔫 Cañones Láser</strong><span id="upgrade-laser-copy">Nivel 0</span></div>
+                        <button type="button" id="upgrade-laser-btn" class="meta-button">Mejorar</button>
+                    </div>
                 </div>
             </div>
 
@@ -3510,6 +3518,27 @@
                     return `Nivel ${level} · más maniobrabilidad y menos drag al girar`;
                 }
             },
+            shield_plating: {
+                id: "shield_plating",
+                displayName: "Blindaje",
+                maxLevel: 3,
+                costByLevel: [180, 320, 480],
+                partsByLevel: [0, 1, 3],
+                describe(level) {
+                    return `Nivel ${level} · escudo ${100 + level * 30} y regeneración +${(level * 2.5).toFixed(1)}/s tras 3,5 s sin impactos`;
+                }
+            },
+            laser_cannons: {
+                id: "laser_cannons",
+                displayName: "Cañones Láser",
+                maxLevel: 3,
+                costByLevel: [200, 340, 520],
+                partsByLevel: [0, 2, 3],
+                describe(level) {
+                    const text = ["cadencia base", "cadencia +20%", "cadencia +20% y daño x1.5", "triple láser, daño x2"];
+                    return `Nivel ${level} · ${text[level]}`;
+                }
+            },
             landing_suite: {
                 id: "landing_suite",
                 displayName: "Landing Suite",
@@ -3530,7 +3559,9 @@
             upgrades: {
                 fuel_tank: 0,
                 control_linkage: 0,
-                landing_suite: 0
+                landing_suite: 0,
+                shield_plating: 0,
+                laser_cannons: 0
             },
             currencies: {
                 credits: 0,
@@ -4327,8 +4358,14 @@
             uiUpgradeFuelBtn.disabled = !canAfford(UPGRADE_DEFS.fuel_tank, fuelLevel);
             uiUpgradeControlBtn.disabled = !canAfford(UPGRADE_DEFS.control_linkage, controlLevel);
             uiUpgradeLandingBtn.disabled = !canAfford(UPGRADE_DEFS.landing_suite, landingLevel);
+            const shieldLevel = getUpgradeLevel("shield_plating");
+            const laserLevel = getUpgradeLevel("laser_cannons");
+            document.getElementById("upgrade-shield-copy").innerText = `${UPGRADE_DEFS.shield_plating.describe(shieldLevel)} · ${upgradeCostLabel(UPGRADE_DEFS.shield_plating, shieldLevel)}`;
+            document.getElementById("upgrade-laser-copy").innerText = `${UPGRADE_DEFS.laser_cannons.describe(laserLevel)} · ${upgradeCostLabel(UPGRADE_DEFS.laser_cannons, laserLevel)}`;
+            document.getElementById("upgrade-shield-btn").disabled = !canAfford(UPGRADE_DEFS.shield_plating, shieldLevel);
+            document.getElementById("upgrade-laser-btn").disabled = !canAfford(UPGRADE_DEFS.laser_cannons, laserLevel);
 
-            const upgradeButtons = [uiUpgradeFuelBtn, uiUpgradeControlBtn, uiUpgradeLandingBtn];
+            const upgradeButtons = [uiUpgradeFuelBtn, uiUpgradeControlBtn, uiUpgradeLandingBtn, document.getElementById("upgrade-shield-btn"), document.getElementById("upgrade-laser-btn")];
             const affordableUpgrades = upgradeButtons.reduce((count, button) => count + (button.disabled ? 0 : 1), 0);
             const lockedAircraft = getAircraftIds().length - saveState.unlockedAircraftIds.length;
             const lockedWorlds = getWorldIds().length - saveState.unlockedWorldIds.length;
@@ -5091,6 +5128,8 @@
             uiUpgradeFuelBtn.addEventListener("click", () => purchaseUpgrade("fuel_tank"));
             uiUpgradeControlBtn.addEventListener("click", () => purchaseUpgrade("control_linkage"));
             uiUpgradeLandingBtn.addEventListener("click", () => purchaseUpgrade("landing_suite"));
+            document.getElementById("upgrade-shield-btn").addEventListener("click", () => purchaseUpgrade("shield_plating"));
+            document.getElementById("upgrade-laser-btn").addEventListener("click", () => purchaseUpgrade("laser_cannons"));
             uiMetaSectionButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     const nextSection = button.dataset.metaTarget;
@@ -5853,6 +5892,15 @@
 
             resetWorldObjects();
             lastPlayedLevelIndex = getSelectedLevelIndex();
+            const shieldLevel = getUpgradeLevel("shield_plating");
+            const laserLevel = getUpgradeLevel("laser_cannons");
+            Combat.setLoadout({
+                maxShield: 100 + shieldLevel * 30,
+                regen: shieldLevel * 2.5,
+                fireCooldown: [0.15, 0.125, 0.125, 0.12][laserLevel],
+                damage: [1, 1, 1.5, 2][laserLevel],
+                spread: laserLevel >= 3
+            });
             // First level of the first world is a calm tutorial flight without obstacle set pieces.
             Combat.setPiecesEnabled(!(currentWorldProfile.id === getWorldIds()[0] && lastPlayedLevelIndex === 0));
             Combat.reset(THREE.MathUtils.clamp(9 - currentWorldProfile.environmentModifiers.supportFuelCap, 1, 5) + lastPlayedLevelIndex * 0.4);

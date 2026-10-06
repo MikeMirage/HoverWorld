@@ -21,6 +21,8 @@
         boss: null,
         shield: 100,
         maxShield: 100,
+        loadout: { maxShield: 100, regen: 0, fireCooldown: 0.15, damage: 1, spread: false },
+        lastHitAt: 0,
         fireCooldown: 0,
         firing: false,
         tier: 1,
@@ -250,6 +252,7 @@
     function damagePlayer(amount, label) {
         if (!isPlaying || isSkidding || isControlledLanding) return;
         C.shield = Math.max(0, C.shield - amount);
+        C.lastHitAt = performance.now();
         C.hitFlash = 1;
         shakeIntensity = Math.max(shakeIntensity, 3);
         if (typeof flashScreen === "function") flashScreen("rgba(255,60,40,1)", 0.28);
@@ -261,7 +264,7 @@
 
     // ---------- player lasers ----------
     function findLock(dir) {
-        let best = null, bestDot = Math.cos(THREE.MathUtils.degToRad(7));
+        let best = null, bestDot = Math.cos(THREE.MathUtils.degToRad(C.boss ? 11 : 7));
         targetsForAssist().forEach((pos) => {
             tmpV.copy(pos).sub(playerShip.position);
             const d = tmpV.length();
@@ -275,8 +278,8 @@
     function firePlayer() {
         const euler = makeFlightEuler(flightState.pitch, flightState.yaw, 0);
         const dir = FORWARD.clone().applyEuler(euler);
-        // Aim assist: bend toward the nearest target inside a narrow cone.
-        let best = null, bestDot = Math.cos(THREE.MathUtils.degToRad(7));
+        // Aim assist: bend toward the nearest target inside a narrow cone (wider vs. the boss).
+        let best = null, bestDot = Math.cos(THREE.MathUtils.degToRad(C.boss ? 11 : 7));
         targetsForAssist().forEach((pos) => {
             tmpV.copy(pos).sub(playerShip.position);
             const d = tmpV.length();
@@ -285,12 +288,13 @@
             if (dot > bestDot) { bestDot = dot; best = pos; }
         });
         if (best) dir.copy(best).sub(playerShip.position).normalize();
-        [-1, 1].forEach((side) => {
+        const muzzles = C.loadout.spread ? [-1, 0, 1] : [-1, 1];
+        muzzles.forEach((side) => {
             const b = C.bolts.find((x) => !x.active);
             if (!b) return;
             b.active = true;
             b.life = 1.1;
-            b.mesh.position.copy(playerShip.position).add(new THREE.Vector3(side * 3.2, -0.2, -2).applyEuler(euler));
+            b.mesh.position.copy(playerShip.position).add(new THREE.Vector3(side * 3.2, side === 0 ? 0.6 : -0.2, -2).applyEuler(euler));
             b.vel.copy(dir).multiplyScalar(flightSpeed + 700);
             b.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
             b.mesh.visible = true;
@@ -342,7 +346,7 @@
         }
         for (const f of C.fighters) {
             if (f.alive && segmentHit(b, f.mesh.position, 8)) {
-                f.hp -= 1;
+                f.hp -= C.loadout.damage;
                 if (f.hp <= 0) killFighter(f);
                 else { GameAudio.play("hit"); f.flash = 0.15; }
                 return true;
@@ -350,7 +354,7 @@
         }
         for (const d of C.drones) {
             if (d.alive && segmentHit(b, d.mesh.position, 8)) {
-                d.hp -= 1;
+                d.hp -= C.loadout.damage;
                 if (d.hp <= 0) killDrone(d);
                 else GameAudio.play("hit");
                 return true;
@@ -877,7 +881,7 @@
             reticle.position.y = -9;
             pod.add(reticle);
             g.add(pod);
-            weakPoints.push({ mesh: pod, hp: 0, maxHp: 0, radius: 5.5, exposed: true, kind: "pod", flame, reticle, index });
+            weakPoints.push({ mesh: pod, hp: 0, maxHp: 0, radius: 8, exposed: true, kind: "pod", flame, reticle, index });
         });
         const core = new THREE.Mesh(new THREE.OctahedronGeometry(4.5, 0), shared.coreMat);
         core.position.set(0, -8.5, 22);
@@ -885,16 +889,25 @@
         const coreShield = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 12), shared.hullDark);
         coreShield.position.copy(core.position);
         g.add(core, coreShield);
-        weakPoints.push({ mesh: core, hp: 0, maxHp: 0, radius: 6, exposed: false, kind: "core", shield: coreShield });
+        weakPoints.push({ mesh: core, hp: 0, maxHp: 0, radius: 8.5, exposed: false, kind: "core", shield: coreShield });
         return { group: g, weakPoints, turrets };
     }
 
     function spawnBoss(atZ, missionObject) {
         if (C.boss) return C.boss;
         const built = buildBossMesh();
-        const podHp = 6 + C.tier * 3;
+        const podHp = Math.round(4 + C.tier * 2);
         built.weakPoints.forEach((w) => {
-            w.maxHp = w.hp = w.kind === "core" ? 18 + C.tier * 6 : podHp;
+            w.maxHp = w.hp = w.kind === "core" ? Math.round(12 + C.tier * 4) : podHp;
+        });
+        built.turrets.forEach((tur) => {
+            const light = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3a2a }));
+            light.position.y = 1.6;
+            tur.add(light);
+            const turretHp = 3 + Math.floor(C.tier * 0.8);
+            const w = { mesh: tur, hp: turretHp, maxHp: turretHp, radius: 5.5, exposed: true, kind: "turret", disabled: 0, light };
+            tur.userData.weakPoint = w;
+            built.weakPoints.push(w);
         });
         built.group.position.set(0, 70, atZ);
         scene.add(built.group);
@@ -909,10 +922,23 @@
     }
 
     function hitWeakPoint(w, wp) {
-        w.hp -= 1;
+        w.hp -= C.loadout.damage;
         GameAudio.play("hit");
         if (typeof spawnPickupBurst === "function") spawnPickupBurst(wp, 0xffd27a, 5);
         if (w.hp > 0) { updateBossHud(); return; }
+        if (w.kind === "turret") {
+            // Turrets are knocked out temporarily, then the crew repairs them.
+            w.hp = 0;
+            w.disabled = 8 + C.tier * 0.5;
+            w.light.material = shared.hullDark;
+            w.mesh.rotation.x = 0.5;
+            explode(wp, 1.1, true);
+            GameAudio.play("explode");
+            awardStylePoints("TORRETA KO", 80, wp, "#ffb070");
+            C.shield = Math.min(C.maxShield, C.shield + 12);
+            showMissionToast("¡Torreta inutilizada! Se reparará en unos segundos");
+            return;
+        }
         explode(wp, 2.2, true);
         GameAudio.play("bigExplode");
         shakeIntensity = Math.max(shakeIntensity, 5);
@@ -998,6 +1024,17 @@
             if (w.reticle) w.reticle.rotation.z += delta * 2;
         });
         boss.turrets.forEach((tur) => {
+            const w = tur.userData.weakPoint;
+            if (w && w.disabled > 0) {
+                w.disabled -= delta;
+                if (w.disabled <= 0) {
+                    w.hp = w.maxHp;
+                    w.light.material = new THREE.MeshBasicMaterial({ color: 0xff3a2a });
+                    tur.rotation.x = 0;
+                }
+                return;
+            }
+            if (w) w.light.visible = Math.sin(boss.t * 6) > -0.3;
             tmpV.copy(p);
             tur.parent.worldToLocal(tmpV);
             tur.rotation.y = Math.atan2(tmpV.x - tur.position.x, tmpV.z - tur.position.z);
@@ -1014,7 +1051,7 @@
         const inRange = gap > 0 && gap < 520 && Math.abs(p.x - boss.mesh.position.x) < 260;
         if (inRange && !boss.introShown) {
             boss.introShown = true;
-            showMissionToast("¡Persigue al Dreadnought! Dispara a sus motores");
+            showMissionToast("¡Persigue al Dreadnought! Silencia sus torretas y destruye los motores");
             GameAudio.play("bossAlarm");
         }
         if (inRange) {
@@ -1023,6 +1060,7 @@
             if (boss.spreadTimer <= 0) {
                 boss.spreadTimer = (1.9 - C.tier * 0.12) * rate;
                 boss.turrets.forEach((tur) => {
+                    if (tur.userData.weakPoint && tur.userData.weakPoint.disabled > 0) return;
                     const origin = tur.getWorldPosition(new THREE.Vector3());
                     const n = boss.phase === 2 ? 5 : 3;
                     for (let k = 0; k < n; k++) {
@@ -1160,11 +1198,13 @@
         const boss = C.boss;
         h.boss.classList.toggle("visible", !!(boss && boss.alive && boss.introShown));
         if (!boss) return;
-        const total = boss.weakPoints.reduce((a, w) => a + w.maxHp, 0);
-        const left = boss.weakPoints.reduce((a, w) => a + Math.max(0, w.hp), 0);
+        const vital = boss.weakPoints.filter((w) => w.kind !== "turret");
+        const total = vital.reduce((a, w) => a + w.maxHp, 0);
+        const left = vital.reduce((a, w) => a + Math.max(0, w.hp), 0);
         h.bossFill.style.width = `${(left / total) * 100}%`;
         const pods = boss.weakPoints.filter((w) => w.kind === "pod" && w.hp > 0).length;
-        h.bossLabel.textContent = boss.phase === 1 ? `Motores: ${pods} / 4` : "¡Núcleo expuesto!";
+        const turretsUp = boss.weakPoints.filter((w) => w.kind === "turret" && !(w.disabled > 0)).length;
+        h.bossLabel.textContent = `${boss.phase === 1 ? `Motores ${pods}/4` : "¡Núcleo expuesto!"} · Torretas ${turretsUp}/2`;
     }
 
     function updateHud(delta) {
@@ -1179,6 +1219,7 @@
     function reset(tier) {
         init();
         C.tier = tier || 1;
+        C.maxShield = C.loadout.maxShield;
         C.shield = C.maxShield;
         C.fireCooldown = 0;
         C.firing = false;
@@ -1214,7 +1255,7 @@
         C.lock = findLock(FORWARD.clone().applyEuler(makeFlightEuler(flightState.pitch, flightState.yaw, 0)));
         const wantsFire = C.firing || (C.autoFire && C.lock);
         if (wantsFire && C.fireCooldown <= 0 && !isSkidding && !isControlledLanding) {
-            C.fireCooldown = 0.13;
+            C.fireCooldown = C.loadout.fireCooldown;
             firePlayer();
         }
         updateBolts(delta);
@@ -1225,6 +1266,9 @@
         updatePieces();
         updateBoss(delta);
         updateMinesMissiles(delta, t);
+        if (C.loadout.regen > 0 && C.shield > 0 && C.shield < C.maxShield && performance.now() - C.lastHitAt > 3500) {
+            C.shield = Math.min(C.maxShield, C.shield + C.loadout.regen * delta);
+        }
         updateHud(delta);
         if (isPlaying && !isSkidding && !isControlledLanding) {
             const hit = checkHazards(playerShip.position);
@@ -1239,6 +1283,7 @@
         setQuiet(v) { C.quiet = !!v; },
         setPiecesEnabled(v) { C.noPieces = !v; },
         setAutoFire(v) { C.autoFire = !!v; },
+        setLoadout(l) { Object.assign(C.loadout, l); C.maxShield = C.loadout.maxShield; C.shield = Math.min(C.shield, C.maxShield); },
         get autoFire() { return !!C.autoFire; },
         startDogfight, stopDogfight, setSurvive,
         get fighters() { return C.fighters; },
