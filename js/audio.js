@@ -184,6 +184,47 @@
             whoosh(0.4, 0.22, 2600);
             tone(midi(84 + level * 2), t + 0.05, 0.18, { type: "triangle", gain: 0.06 });
         },
+        laser() {
+            const t = ctx.currentTime;
+            tone(1400, t, 0.07, { type: "square", slideTo: 500, gain: 0.025, filter: 3500 });
+        },
+        hit() {
+            const t = ctx.currentTime;
+            tone(900, t, 0.05, { type: "square", slideTo: 1500, gain: 0.04, filter: 4000 });
+        },
+        armor() {
+            const t = ctx.currentTime;
+            tone(2600, t, 0.04, { type: "triangle", gain: 0.03 });
+        },
+        explode() {
+            burst(0.55, 0.32, 1400);
+            const t = ctx.currentTime;
+            tone(120, t, 0.4, { type: "sine", slideTo: 40, gain: 0.22 });
+        },
+        bigExplode() {
+            burst(1.6, 0.6, 1100);
+            burst(0.4, 0.4, 4000);
+            const t = ctx.currentTime;
+            tone(70, t, 1.4, { type: "sine", slideTo: 24, gain: 0.45 });
+        },
+        playerHit() {
+            burst(0.25, 0.35, 2500);
+            const t = ctx.currentTime;
+            tone(220, t, 0.25, { type: "sawtooth", slideTo: 90, gain: 0.08, filter: 1200 });
+        },
+        enemyShot() {
+            const t = ctx.currentTime;
+            tone(520, t, 0.12, { type: "sawtooth", slideTo: 260, gain: 0.03, filter: 1600 });
+        },
+        missile() {
+            whoosh(0.9, 0.16, 1200);
+            const t = ctx.currentTime;
+            tone(300, t, 0.6, { type: "sawtooth", slideTo: 600, gain: 0.03, filter: 1400 });
+        },
+        bossAlarm() {
+            const t = ctx.currentTime;
+            [0, 0.3, 0.6].forEach((d) => tone(660, t + d, 0.18, { type: "square", slideTo: 440, gain: 0.05, filter: 2200 }));
+        },
         boost() {
             const t = ctx.currentTime;
             whoosh(0.6, 0.28, 2200);

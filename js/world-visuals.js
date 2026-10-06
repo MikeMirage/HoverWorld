@@ -899,6 +899,7 @@
         sun.target.position.z = sun.position.z - W.sunDir.z * 420;
 
         streamTiles(focus, W.tiles.size === 0 ? 99 : 2);
+        updateFlare(cam, delta);
 
         W.clouds.forEach((cloud) => {
             cloud.mesh.position.x += cloud.speed * delta;
@@ -910,6 +911,81 @@
             const camDist = cloud.mesh.position.distanceTo(cam.position);
             cloud.mesh.material.opacity = THREE.MathUtils.clamp((camDist - 25) / 90, 0, 0.95);
             cloud.mesh.visible = cloud.mesh.material.opacity > 0.02;
+        });
+    }
+
+
+    // ---------- lens flare (DOM overlay, occlusion by raycast) ----------
+    const flare = { root: null, parts: [], visibility: 0, target: 0, frame: 0, ray: new THREE.Raycaster() };
+    const FLARE_PARTS = [
+        { t: 0, size: 320, cls: "core" },
+        { t: 0, size: 620, cls: "streak" },
+        { t: 0.32, size: 46, cls: "ghost g1" },
+        { t: 0.58, size: 22, cls: "ghost g2" },
+        { t: 0.86, size: 90, cls: "ring" },
+        { t: 1.18, size: 34, cls: "ghost g3" },
+        { t: 1.45, size: 150, cls: "ring faint" },
+        { t: 1.75, size: 18, cls: "ghost g1" }
+    ];
+    function buildFlare() {
+        const style = document.createElement("style");
+        style.textContent = `
+            #lens-flare { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: screen; overflow: hidden; }
+            #lens-flare span { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); will-change: left, top, opacity; }
+            #lens-flare .core { background: radial-gradient(circle, rgba(255,250,235,0.85) 0%, rgba(255,230,180,0.35) 18%, rgba(255,200,140,0.08) 45%, rgba(255,200,140,0) 70%); }
+            #lens-flare .streak { height: 6px !important; border-radius: 6px; background: linear-gradient(90deg, rgba(255,220,180,0) 0%, rgba(255,235,210,0.55) 50%, rgba(255,220,180,0) 100%); }
+            #lens-flare .ghost { background: radial-gradient(circle, rgba(170,220,255,0.28) 0%, rgba(170,220,255,0.12) 60%, rgba(170,220,255,0) 72%); }
+            #lens-flare .ghost.g2 { background: radial-gradient(circle, rgba(255,190,120,0.32) 0%, rgba(255,190,120,0) 70%); }
+            #lens-flare .ghost.g3 { background: radial-gradient(circle, rgba(160,255,200,0.22) 0%, rgba(160,255,200,0) 70%); }
+            #lens-flare .ring { background: radial-gradient(circle, rgba(255,255,255,0) 58%, rgba(200,230,255,0.16) 66%, rgba(255,210,170,0.1) 72%, rgba(255,255,255,0) 78%); }
+            #lens-flare .ring.faint { opacity: 0.6; }
+        `;
+        document.head.appendChild(style);
+        flare.root = document.createElement("div");
+        flare.root.id = "lens-flare";
+        FLARE_PARTS.forEach((def) => {
+            const el = document.createElement("span");
+            el.className = def.cls;
+            el.style.width = `${def.size}px`;
+            el.style.height = `${def.size}px`;
+            flare.root.appendChild(el);
+            flare.parts.push({ el, def });
+        });
+        const host = document.getElementById("ui-layer") || document.body;
+        host.insertBefore(flare.root, host.firstChild);
+    }
+
+    const flareTmp = new THREE.Vector3();
+    function updateFlare(cam, delta) {
+        if (!flare.root) buildFlare();
+        const sunPos = flareTmp.copy(cam.position).addScaledVector(W.sunDir, 1000);
+        const ndc = sunPos.clone().project(cam);
+        const onScreen = ndc.z < 1 && Math.abs(ndc.x) < 1.25 && Math.abs(ndc.y) < 1.25;
+        flare.frame += 1;
+        if (onScreen && flare.frame % 4 === 0) {
+            flare.ray.set(cam.position, W.sunDir);
+            flare.ray.far = 1600;
+            const targets = [];
+            W.tiles.forEach((tile) => tile.meshes.forEach((m) => targets.push(m)));
+            horizonGroup.children.forEach((m) => targets.push(m));
+            W.clouds.forEach((c) => { if (c.mesh.visible) targets.push(c.mesh); });
+            const hits = flare.ray.intersectObjects(targets, false);
+            flare.target = hits.length ? (hits[0].object.material === cloudMat || W.clouds.some((c) => c.mesh === hits[0].object) ? 0.25 : 0) : 1;
+        } else if (!onScreen) {
+            flare.target = 0;
+        }
+        const edge = onScreen ? THREE.MathUtils.clamp(1.25 - Math.max(Math.abs(ndc.x), Math.abs(ndc.y)), 0, 0.5) * 2 : 0;
+        flare.visibility += (flare.target * edge - flare.visibility) * Math.min(1, delta * 6);
+        const strength = flare.visibility * (W.pal.stars ? 0.45 : 1) * (W.sunDir.y > 0 ? 1 : 0);
+        flare.root.style.display = strength > 0.01 ? "block" : "none";
+        if (strength <= 0.01) return;
+        const w = window.innerWidth, h = window.innerHeight;
+        const sx = (ndc.x * 0.5 + 0.5) * w, sy = (-ndc.y * 0.5 + 0.5) * h;
+        const cx = w / 2, cy = h / 2;
+        flare.parts.forEach(({ el, def }) => {
+            el.style.left = `${sx + (cx - sx) * def.t}px`;
+            el.style.top = `${sy + (cy - sy) * def.t}px`;
+            el.style.opacity = (def.cls === "core" || def.cls === "streak" ? strength : strength * 0.85).toFixed(3);
         });
     }
 
