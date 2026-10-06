@@ -49,11 +49,32 @@
     }
 
     function buildShared() {
+        // Billboard fireball: noisy hot core that cools into smoke, plus a shock ring.
         const fireballMat = () => new THREE.ShaderMaterial({
-            vertexShader: document.getElementById("explosionVertexShader").textContent,
-            fragmentShader: document.getElementById("explosionFragmentShader").textContent,
-            uniforms: { uTime: { value: 0 }, uExplosionProgress: { value: 0 } },
-            transparent: true, side: THREE.DoubleSide, depthWrite: false
+            uniforms: { uT: { value: 0 }, uSeed: { value: 0 } },
+            vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+            fragmentShader: `
+                uniform float uT; uniform float uSeed; varying vec2 vUv;
+                float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+                float n(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }
+                float fbm(vec2 p){ float v = 0.0; float a = 0.5; for (int i = 0; i < 5; i++){ v += a * n(p); p *= 2.05; a *= 0.5; } return v; }
+                void main(){
+                    vec2 p = vUv * 2.0 - 1.0; float r = length(p);
+                    float t = uT;
+                    float nz = fbm(p * 2.4 + vec2(uSeed, uSeed * 0.7) + vec2(0.0, -t * 1.4));
+                    float radius = mix(0.3, 0.88, sqrt(t));
+                    float body = smoothstep(radius, radius * 0.45, r + (nz - 0.5) * 0.55);
+                    float heat = smoothstep(0.55, 0.0, t) * smoothstep(radius * 0.85, 0.0, r + (nz - 0.5) * 0.35);
+                    vec3 fire = mix(vec3(0.95, 0.32, 0.06), vec3(1.0, 0.9, 0.55), heat);
+                    vec3 smoke = mix(vec3(0.22, 0.19, 0.17), vec3(0.32, 0.3, 0.3), nz);
+                    vec3 col = mix(fire * (1.2 + heat), smoke, smoothstep(0.22, 0.8, t));
+                    float a = body * (1.0 - smoothstep(0.72, 1.0, t));
+                    float ring = smoothstep(0.035, 0.0, abs(r - (0.15 + t * 0.95))) * (1.0 - t) * smoothstep(0.0, 0.05, t);
+                    col += vec3(1.0, 0.85, 0.6) * ring * 1.2;
+                    gl_FragColor = vec4(col, clamp(max(a, ring * 0.7), 0.0, 1.0));
+                }`,
+            transparent: true, depthWrite: false
         });
         shared = {
             boltGeom: new THREE.BoxGeometry(0.22, 0.22, 7),
@@ -61,7 +82,7 @@
             shotGeom: new THREE.IcosahedronGeometry(0.9, 1),
             shotMat: new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }),
             shotCoreMat: new THREE.MeshBasicMaterial({ color: 0xffe0a0 }),
-            fireballGeom: new THREE.SphereGeometry(1.2, 22, 18),
+            fireballGeom: new THREE.PlaneGeometry(1, 1),
             fireballMat,
             droneBody: rimMaterial(0x2b313b, 0xff5a3a, { metalness: 0.5, roughness: 0.4, flat: true, rimStrength: 0.8 }),
             droneWing: new THREE.MeshStandardMaterial({ color: 0xb8402c, roughness: 0.5, metalness: 0.3, flatShading: true }),
@@ -122,28 +143,80 @@
         const e = C.fx.find((f) => !f.active) || C.fx[0];
         e.active = true;
         e.t = 0;
-        e.dur = 0.9 + size * 0.15;
+        e.dur = 1.1 + size * 0.25;
         e.size = size;
         e.mesh.position.copy(position);
         e.mesh.visible = true;
-        e.mesh.material.uniforms.uTime.value = Math.random() * 10;
+        e.mesh.material.uniforms.uSeed.value = Math.random() * 50;
         if (withLight && typeof impactLight !== "undefined") {
             impactLight.position.copy(position);
-            impactLight.intensity = 6 * size;
-            impactLight.distance = 30 * size;
+            impactLight.intensity = Math.min(5, 1.6 * size);
+            impactLight.distance = 22 * size;
         }
         if (typeof spawnPickupBurst === "function") spawnPickupBurst(position, 0xffa040, Math.round(8 + size * 4));
     }
 
+    // Lingering smoke plume (noise shader cylinder) for big impacts.
+    let smoke = null;
+    function spawnSmoke(position, duration = 7) {
+        if (!smoke) {
+            const mat = new THREE.ShaderMaterial({
+                uniforms: { uTime: { value: 0 }, uIntensity: { value: 0 } },
+                vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+                fragmentShader: `
+                    uniform float uTime; uniform float uIntensity; varying vec2 vUv;
+                    float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+                    float n(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+                        return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }
+                    float fbm(vec2 p){ float v = 0.0; float a = 0.5; for (int i = 0; i < 4; i++){ v += a * n(p); p *= 2.1; a *= 0.5; } return v; }
+                    void main(){
+                        float y = vUv.y;
+                        float d = fbm(vec2(vUv.x * 6.0 + y * 1.5, y * 3.0 - uTime * 0.45));
+                        float a = smoothstep(0.35, 0.75, d) * smoothstep(1.0, 0.55, y) * smoothstep(0.0, 0.08, y) * 0.75 * uIntensity;
+                        vec3 col = mix(vec3(0.35, 0.18, 0.08), vec3(0.16, 0.15, 0.16), smoothstep(0.0, 0.35, y));
+                        col += vec3(1.0, 0.45, 0.1) * smoothstep(0.2, 0.0, y) * 0.8;
+                        gl_FragColor = vec4(col, a);
+                    }`,
+                transparent: true, depthWrite: false, side: THREE.DoubleSide
+            });
+            const geom = new THREE.CylinderGeometry(22, 5, 90, 20, 1, true);
+            geom.translate(0, 45, 0);
+            smoke = { mesh: new THREE.Mesh(geom, mat), t: 0, dur: 1 };
+            smoke.mesh.frustumCulled = false;
+            scene.add(smoke.mesh);
+        }
+        smoke.mesh.position.set(position.x, 0, position.z);
+        smoke.t = 0;
+        smoke.dur = duration;
+        smoke.mesh.visible = true;
+    }
+
+    // Big cinematic impact: layered fireballs, smoke plume and light.
+    function bigExplosion(position, size = 3) {
+        position.y = Math.max(position.y, size * 4.5);
+        explode(position, size, true);
+        explode(position.clone().add(new THREE.Vector3(3, 2, -2)), size * 0.6);
+        setTimeout(() => explode(position.clone().add(new THREE.Vector3(-2, 4, 3)), size * 0.5), 120);
+        spawnSmoke(position, 8);
+    }
+
     function updateFx(delta) {
+        if (smoke && smoke.mesh.visible) {
+            smoke.t += delta;
+            smoke.mesh.material.uniforms.uTime.value += delta;
+            const k = Math.min(1, smoke.t * 1.5) * Math.min(1, (smoke.dur - smoke.t) / 2);
+            smoke.mesh.material.uniforms.uIntensity.value = Math.max(0, k);
+            smoke.mesh.scale.set(0.6 + smoke.t * 0.08, 0.4 + Math.min(1, smoke.t * 0.5) * 0.8, 0.6 + smoke.t * 0.08);
+            if (smoke.t >= smoke.dur) smoke.mesh.visible = false;
+        }
         C.fx.forEach((e) => {
             if (!e.active) return;
             e.t += delta;
             const p = e.t / e.dur;
             if (p >= 1) { e.active = false; e.mesh.visible = false; return; }
-            e.mesh.material.uniforms.uExplosionProgress.value = p;
-            e.mesh.material.uniforms.uTime.value += delta * 2.5;
-            e.mesh.scale.setScalar(e.size * (1 + p * 4.5));
+            e.mesh.material.uniforms.uT.value = p;
+            e.mesh.quaternion.copy(camera.quaternion);
+            e.mesh.scale.setScalar(e.size * 14 * (0.75 + p * 0.5));
         });
         if (typeof impactLight !== "undefined" && impactLight.intensity > 0) impactLight.intensity = Math.max(0, impactLight.intensity - delta * 14);
     }
@@ -181,6 +254,18 @@
     }
 
     // ---------- player lasers ----------
+    function findLock(dir) {
+        let best = null, bestDot = Math.cos(THREE.MathUtils.degToRad(7));
+        targetsForAssist().forEach((pos) => {
+            tmpV.copy(pos).sub(playerShip.position);
+            const d = tmpV.length();
+            if (d > 650) return;
+            const dot = tmpV.normalize().dot(dir);
+            if (dot > bestDot) { bestDot = dot; best = pos; }
+        });
+        return best;
+    }
+
     function firePlayer() {
         const euler = makeFlightEuler(flightState.pitch, flightState.yaw, 0);
         const dir = FORWARD.clone().applyEuler(euler);
@@ -443,13 +528,27 @@
 
     function buildGate(x, y, z, width, height) {
         const g = new THREE.Group();
-        const postGeom = new THREE.BoxGeometry(3, height + 6, 3);
+        // Posts run all the way to the ground so gates read as built structures, not floating frames.
+        const bottom = y - height / 2;
+        const postLen = bottom + height + 3;
+        const postGeom = new THREE.BoxGeometry(3, postLen, 3);
         [-1, 1].forEach((side) => {
             const post = new THREE.Mesh(postGeom, shared.gateMetal);
-            post.position.set(side * (width / 2 + 1.5), (height + 6) / 2 - 3, 0);
+            post.position.set(side * (width / 2 + 1.5), postLen / 2 - bottom, 0);
             post.castShadow = true;
             g.add(post);
+            const foot = new THREE.Mesh(new THREE.BoxGeometry(6, 2, 6), shared.hullDark);
+            foot.position.set(side * (width / 2 + 1.5), 1 - bottom, 0);
+            g.add(foot);
+            for (let k = 1; k < Math.floor(postLen / 12); k++) {
+                const brace = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.6, 3.6), shared.hullAccent);
+                brace.position.set(side * (width / 2 + 1.5), k * 12 - bottom, 0);
+                g.add(brace);
+            }
         });
+        const lowBar = new THREE.Mesh(new THREE.BoxGeometry(width + 6, 1.2, 2), shared.gateMetal);
+        lowBar.position.y = -0.6;
+        g.add(lowBar);
         const bar = new THREE.Mesh(new THREE.BoxGeometry(width + 6, 3, 3), shared.gateMetal);
         bar.position.y = height + 1.5;
         bar.castShadow = true;
@@ -991,6 +1090,7 @@
         updateBoss(delta);
         updateMinesMissiles(delta, t);
         updateHud(delta);
+        C.lock = findLock(FORWARD.clone().applyEuler(makeFlightEuler(flightState.pitch, flightState.yaw, 0)));
         if (isPlaying && !isSkidding && !isControlledLanding) {
             const hit = checkHazards(playerShip.position);
             if (hit) triggerCriticalCrash(hit, "#ff7a5c");
@@ -1004,6 +1104,8 @@
         get timeScale() { return C.timeScale; },
         get shield() { return C.shield; },
         addShield(v) { C.shield = Math.min(C.maxShield, C.shield + v); },
+        explode, bigExplosion,
+        get lock() { return C.lock || null; },
         stats() { return { drones: C.drones.length, hazards: C.hazards.length, pieces: C.pieces.length, shots: C.shots.filter((x) => x.active).length, boss: !!C.boss }; }
     };
 })();
