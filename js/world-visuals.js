@@ -7,6 +7,7 @@
     const TILE = 240;
     let TILE_RADIUS = 4;
     let fogScale = 1;
+    let weatherFog = 1;
     const VALLEY_HALF = 250;
 
     const PALETTES = {
@@ -414,6 +415,7 @@
                 uSunColor: { value: new THREE.Color() },
                 uSunDir: { value: new THREE.Vector3(0, 1, 0) },
                 uStars: { value: 0 },
+                uFlash: { value: 0 },
                 uAurora: { value: 0 },
                 uTime: { value: 0 }
             },
@@ -427,7 +429,7 @@
             `,
             fragmentShader: `
                 uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uBottom; uniform vec3 uSunColor; uniform vec3 uSunDir;
-                uniform float uStars; uniform float uAurora; uniform float uTime;
+                uniform float uStars; uniform float uAurora; uniform float uTime; uniform float uFlash;
                 varying vec3 vDir;
                 ${NOISE_GLSL}
                 float hash3(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
@@ -454,6 +456,7 @@
                         float ripple = 0.6 + 0.4 * hw_noise(vec2(d.x * 30.0, h * 6.0 - uTime * 0.6));
                         col += mix(vec3(0.15, 1.0, 0.65), vec3(0.6, 0.35, 1.0), smoothstep(0.2, 0.6, h)) * curtain * ripple * 0.55 * uAurora;
                     }
+                    col = mix(col, vec3(0.85, 0.9, 1.0), uFlash * 0.75);
                     gl_FragColor = vec4(col, 1.0);
                 }
             `,
@@ -701,10 +704,10 @@
         u.uSunDir.value.copy(W.sunDir);
 
         scene.background = C(pal.horizon);
-        scene.fog = new THREE.Fog(pal.horizon, pal.fogNear * fogScale, pal.fogFar * fogScale);
+        scene.fog = new THREE.Fog(pal.horizon, pal.fogNear * fogScale * weatherFog, pal.fogFar * fogScale * weatherFog);
 
         sun.color.setHex(pal.sun);
-        sun.intensity = pal.stars ? 0.7 : 0.95;
+        sun.intensity = (pal.stars ? 0.7 : 0.95) * weatherSun;
         hemi.color.setHex(pal.hemiSky);
         hemi.groundColor.setHex(pal.hemiGround);
         hemi.intensity = pal.stars ? 0.75 : 0.62;
@@ -1048,15 +1051,51 @@
     function setDetail(level) {
         TILE_RADIUS = level === "low" ? 3 : 4;
         fogScale = level === "low" ? 0.78 : 1;
-        if (W.pal && scene.fog) {
-            scene.fog.near = W.pal.fogNear * fogScale;
-            scene.fog.far = W.pal.fogFar * fogScale;
+        applyFogDistances();
+    }
+
+    function applyFogDistances() {
+        if (W.pal && scene && scene.fog) {
+            scene.fog.near = W.pal.fogNear * fogScale * weatherFog;
+            scene.fog.far = W.pal.fogFar * fogScale * weatherFog;
         }
+    }
+
+    let weatherSun = 1;
+    function setWeatherFog(mul, sunMul = 1) {
+        weatherFog = mul;
+        weatherSun = sunMul;
+        applyFogDistances();
+        if (W.pal) sun.intensity = (W.pal.stars ? 0.7 : 0.95) * weatherSun;
+    }
+
+    // Lightning: brighten the sky dome and the ambient light for a frame or two.
+    function setFlash(v) {
+        if (!W.ready) return;
+        sky.material.uniforms.uFlash.value = v;
+        if (W.pal) hemi.intensity = (W.pal.stars ? 0.75 : 0.62) + v * 1.4;
+    }
+
+    // Weather sky tint: blends sky dome + fog/background toward a weather colour.
+    function setWeatherSky(tint) {
+        if (!W.ready || !W.pal) return;
+        const u = sky.material.uniforms;
+        u.uTop.value.setHex(W.pal.skyTop);
+        u.uHorizon.value.setHex(W.pal.horizon);
+        u.uBottom.value.setHex(W.pal.bottom);
+        if (tint) {
+            const top = new THREE.Color(tint.top), hor = new THREE.Color(tint.horizon);
+            u.uTop.value.lerp(top, tint.amount);
+            u.uHorizon.value.lerp(hor, tint.amount);
+            u.uBottom.value.lerp(hor, tint.amount);
+        }
+        if (scene.fog) scene.fog.color.copy(u.uHorizon.value);
+        if (scene.background && scene.background.isColor) scene.background.copy(u.uHorizon.value);
     }
 
     function getPalette() {
         return W.pal;
     }
 
-    window.WorldGfx = { init, applyTheme, update, setDetail, checkCollision, probeClearance, addClearing, reset, riverX, getPalette, VALLEY_HALF };
+    window.WorldGfx = { init, applyTheme, update, setDetail, setWeatherFog, setFlash, setWeatherSky, checkCollision, probeClearance, addClearing, reset, riverX, getPalette, VALLEY_HALF };
 })();

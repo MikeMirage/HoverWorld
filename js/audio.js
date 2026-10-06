@@ -103,6 +103,7 @@
     // ---------- continuous layers ----------
     function startLoops() {
         if (!ensure() || engine) return;
+        applyAmbience();
         const t = ctx.currentTime;
         // Engine: two detuned saws + sub sine through a lowpass, with AM "prop chop".
         const eGain = ctx.createGain(); eGain.gain.value = 0;
@@ -129,7 +130,39 @@
         wind = { gain: wGain, filter: wFilter };
     }
 
+    // Weather ambience: rain hiss, wind howl and lava rumble beds.
+    let ambience = null;
+    const ambienceTarget = { rain: 0, wind: 0, lava: 0 };
+    function ensureAmbience() {
+        if (!ctx || ambience) return;
+        const mk = (type, freq, q) => {
+            const src = noise();
+            const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+            const g = ctx.createGain(); g.gain.value = 0;
+            src.connect(f).connect(g).connect(sfxBus);
+            src.start();
+            return { g, f };
+        };
+        ambience = { rain: mk("highpass", 1800, 0.4), wind: mk("bandpass", 380, 0.8), lava: mk("lowpass", 140, 0.7) };
+    }
+    function setAmbience(levels) {
+        Object.assign(ambienceTarget, { rain: 0, wind: 0, lava: 0 }, levels);
+        applyAmbience();
+    }
+    function applyAmbience() {
+        if (!ctx) return;
+        ensureAmbience();
+        const t = ctx.currentTime;
+        ambience.rain.g.gain.setTargetAtTime(ambienceTarget.rain * 0.16, t, 0.8);
+        ambience.wind.g.gain.setTargetAtTime(ambienceTarget.wind * 0.1, t, 0.8);
+        ambience.lava.g.gain.setTargetAtTime(ambienceTarget.lava * 0.22, t, 0.8);
+    }
+
     function updateFlight(state) {
+        if (ambience && ambience.wind) {
+            const w = ambienceTarget.wind;
+            ambience.wind.f.frequency.setTargetAtTime(300 + Math.sin(ctx.currentTime * 0.4) * 140 * w, ctx.currentTime, 0.5);
+        }
         if (!ctx || !engine) return;
         const t = ctx.currentTime;
         const speed = state.speed || 0;
@@ -224,6 +257,18 @@
         bossAlarm() {
             const t = ctx.currentTime;
             [0, 0.3, 0.6].forEach((d) => tone(660, t + d, 0.18, { type: "square", slideTo: 440, gain: 0.05, filter: 2200 }));
+        },
+        thunder(dist = 500) {
+            const t = ctx.currentTime;
+            const near = Math.max(0.25, 1 - dist / 1000);
+            burst(0.12, 0.5 * near, 3000);
+            burst(2.8, 0.55 * near, 420, t + 0.05);
+            tone(55, t + 0.05, 2.4, { type: "sine", slideTo: 30, gain: 0.3 * near });
+        },
+        eruption() {
+            burst(1.8, 0.35, 600);
+            const t = ctx.currentTime;
+            tone(60, t, 1.6, { type: "sawtooth", slideTo: 35, gain: 0.08, filter: 300 });
         },
         boost() {
             const t = ctx.currentTime;
@@ -404,7 +449,7 @@
     }
 
     window.GameAudio = {
-        unlock, startLoops, updateFlight, play, setWorld, startMusic, stopMusic, setIntensity,
+        unlock, startLoops, updateFlight, setAmbience, play, setWorld, startMusic, stopMusic, setIntensity,
         toggleMute, setMuted, setVolume, get prefs() { return prefs; }
     };
 })();

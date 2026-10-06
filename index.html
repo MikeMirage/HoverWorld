@@ -2291,6 +2291,7 @@
     <script src="js/post-fx.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/combat.js"></script>
+    <script src="js/weather.js"></script>
 </head>
 <body class="menu-view">
         <div id="ui-layer">
@@ -2307,6 +2308,7 @@
                     <div class="support-stats">
                         <div class="support-stat">Distancia: <span id="discover-distance">0</span> m</div>
                         <div class="support-stat">Altitud: <span id="altitude">0</span> m</div>
+                        <div class="support-stat" id="weather-stat"></div>
                     </div>
                     <div class="fuel-strip">
                         <div class="fuel-meta">
@@ -3677,7 +3679,10 @@
         function applyWorldTheme(profile) {
             if (!scene) return;
             WorldGfx.applyTheme(profile.themeId);
+            Weather.setTheme(profile.themeId, PostFX.getQuality());
             GameAudio.setWorld(profile.themeId);
+            const weatherStat = document.getElementById("weather-stat");
+            if (weatherStat) weatherStat.textContent = Weather.describe(profile.themeId);
         }
 
         function applySelectedLoadout() {
@@ -3836,7 +3841,7 @@
             renderMetaStats(uiMetaWorldStats, [
                 { label: "Dificultad", value: getWorldDifficulty(world) },
                 { label: "Ruta", value: `${world.missionPool.length} misiones` },
-                { label: "Bioma", value: worldTheme?.displayName || "Base" },
+                { label: "Clima", value: Weather.describe(world.themeId) || worldTheme?.displayName || "Base" },
                 { label: "Tu récord", value: worldBest ? `${worldBest.toLocaleString("es-ES")} pts` : "—" }
             ]);
             const startBtn = document.getElementById("start-btn");
@@ -4395,6 +4400,7 @@
             createWind();
             createVisualEffects();
             Combat.init();
+            Weather.init(scene);
             currentWorldProfile = getSelectedWorldProfile();
             applyWorldTheme(currentWorldProfile);
             applyAircraftLivery(getSelectedAircraftProfile());
@@ -5798,7 +5804,7 @@
         function createFuelObject(position) {
             const mesh = new THREE.Group();
             const canMat = Combat.rimMaterial(0x2fd6a8, 0xc8fff2, { emissive: 0x0a5a44, emissiveIntensity: 0.7, metalness: 0.35, roughness: 0.3, rimStrength: 0.9 });
-            const capMat = new THREE.MeshStandardMaterial({ color: 0xe8f4f0, metalness: 0.6, roughness: 0.25 });
+            const capMat = new THREE.MeshStandardMaterial({ color: 0xe8f4f0, metalness: 0.15, roughness: 0.35 });
             const bandMat = new THREE.MeshStandardMaterial({ color: 0xffd23a, emissive: 0x7a5a00, emissiveIntensity: 0.6, roughness: 0.4 });
             const canister = new THREE.Group();
             const body = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 5.2, 18), canMat);
@@ -7218,6 +7224,9 @@
                 }
 
                 playerShip.position.addScaledVector(shipVelocity, delta);
+                // Weather: lateral gusts and a touch of turbulence in rough biomes.
+                playerShip.position.addScaledVector(Weather.windPush, delta);
+                if (Weather.turbulence > 0.3) shakeIntensity = Math.max(shakeIntensity, Weather.turbulence * 0.35 * Math.random());
                 if (playerShip.position.y > 150) playerShip.position.y = 150;
                 uiAltitude.innerText = Math.max(0, Math.floor(playerShip.position.y));
 
@@ -7639,7 +7648,10 @@
                 updateMenuShowcase(delta);
             }
 
-            if (playerShip) WorldGfx.update(delta, playerShip.position, camera);
+            if (playerShip) {
+                WorldGfx.update(delta, playerShip.position, camera);
+                Weather.update(delta, camera, playerShip.position);
+            }
             PostFX.render();
         }
 
