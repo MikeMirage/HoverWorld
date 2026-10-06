@@ -1185,6 +1185,56 @@
         }
 
 
+
+        .buy-button {
+            background: linear-gradient(180deg, #ffe36a 0%, #ffb800 100%) !important;
+            color: #132235 !important;
+        }
+        .ach-head {
+            margin: 10px 0 2px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #8ec9ff;
+        }
+        .contract-row {
+            padding: 9px 11px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .contract-row.done { border-color: rgba(141, 255, 106, 0.45); background: rgba(141, 255, 106, 0.08); }
+        .contract-top { display: flex; justify-content: space-between; gap: 8px; }
+        .contract-top em { color: #ffe9a0; font-style: normal; font-weight: 800; white-space: nowrap; font-size: 12px; }
+        .contract-bar { height: 5px; border-radius: 5px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+        .contract-bar div { height: 100%; background: linear-gradient(90deg, #ffb800, #ffe36a); border-radius: 5px; }
+        .contract-row.done .contract-bar div { background: linear-gradient(90deg, #4cd964, #8dff6a); }
+        .contract-row small { color: #9fb4c6; font-size: 11px; }
+        .ach-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+        }
+        .ach {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 9px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            opacity: 0.55;
+        }
+        .ach.got { opacity: 1; background: rgba(255, 210, 90, 0.1); border-color: rgba(255, 210, 90, 0.4); }
+        .ach-icon { font-size: 20px; }
+        .ach strong { font-size: 12px; }
+        .ach small { font-size: 10px; color: #9fb4c6; line-height: 1.3; }
+        .results-unlock div + div { margin-top: 4px; }
+
         /* ---- Juice / feel layer ---- */
         #hint-banner {
             position: absolute;
@@ -2131,6 +2181,12 @@
             width: min(760px, 100vw);
             margin-top: 6px;
         }
+        #start-screen .meta-grid,
+        #start-screen .menu-shortcuts {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
         @media (max-width: 520px) {
             #start-screen .start-currencies .meta-pill { padding: 5px 8px; font-size: 10px; }
             #start-screen .start-loadout span { display: none; }
@@ -2282,6 +2338,7 @@
                 <div class="meta-actions">
                     <button type="button" id="aircraft-prev-btn" class="meta-button">Avión anterior</button>
                     <button type="button" id="aircraft-next-btn" class="meta-button">Siguiente avión</button>
+                    <button type="button" id="aircraft-buy-btn" class="meta-button buy-button" hidden>Comprar</button>
                 </div>
             </div>
 
@@ -2617,6 +2674,16 @@
                 targetPrefab: "tanker",
                 reward: { fuel: 28, score: 260, stability: 1.4 }
             },
+            arch_run: {
+                id: "arch_run",
+                type: "collect",
+                title: "Bajo los Arcos",
+                description: "Vuela a ras de suelo y atraviesa 4 arcos de roca sin rozar la piedra.",
+                requiredCount: 4,
+                spawnPattern: "arches",
+                targetPrefab: "arch",
+                reward: { fuel: 26, score: 300, stability: 1.0 }
+            },
             sky_race: {
                 id: "sky_race",
                 type: "race",
@@ -2722,6 +2789,21 @@
                 },
                 upgradeSlots: ["fuel_tank", "control_linkage", "landing_suite"]
             }
+        };
+
+        AIRCRAFT_PROFILES.atlas_cargo = {
+            id: "atlas_cargo",
+            displayName: "Atlas Twin",
+            blurb: "Bimotor de carga: enorme depósito, planeo larguísimo y aterrizajes indulgentes, a cambio de giros más pesados.",
+            visualPrefab: "cargo_twin",
+            livery: { primary: 0x5f6f3c, secondary: 0xe8dcc0, accent: 0xd9532b },
+            price: { credits: 1500, parts: 6 },
+            handling: { baseSpeed: 112, stallSpeed: 36, turnSpeed: 1.3, maxPitch: Math.PI / 3, climbSpeedPenalty: 196, diveSpeedBoost: 170, bankDragPenalty: 58 },
+            fuel: { capacity: 150, burnRate: 5.2 },
+            glide: { duration: 15.0 },
+            landing: { maxSpeed: 122, minHold: 1.5, windowAltitude: 18, maxPitch: 0.3, maxRoll: 0.35, maxVerticalSpeed: 18, hardCrashSpeed: 165, hardCrashVerticalSpeed: 36, hardCrashPitch: 0.46, hardCrashRoll: 0.56 },
+            camera: { modeDefault: "arcade" },
+            upgradeSlots: ["fuel_tank", "control_linkage", "landing_suite"]
         };
 
         const LEVEL_THEME_LIBRARY = {
@@ -2858,7 +2940,7 @@
                     groundColor: 0x8b6a2d,
                     gridOpacity: 0.14
                 },
-                missionPool: ["beacon_run", "beacon_run", "letters", "cargo_run"],
+                missionPool: ["beacon_run", "arch_run", "letters", "cargo_run"],
                 featuredChallenges: ["Balizas encadenadas", "Ruta de aproximación", "Entrega de carga final"],
                 environmentModifiers: {
                     supportFuelCap: 6
@@ -2912,7 +2994,7 @@
                     groundColor: 0x262a33,
                     gridOpacity: 0.12
                 },
-                missionPool: ["trucks", "trucks", "beacon_run", "runway_landing"],
+                missionPool: ["trucks", "arch_run", "beacon_run", "runway_landing"],
                 featuredChallenges: ["Impacto industrial", "Segundo convoy pesado", "Zona final de aterrizaje"],
                 environmentModifiers: {
                     supportFuelCap: 5
@@ -2930,7 +3012,7 @@
                     groundColor: 0xd1a65e,
                     gridOpacity: 0.14
                 },
-                missionPool: ["puzzle", "letters", "beacon_run", "runway_landing"],
+                missionPool: ["puzzle", "arch_run", "beacon_run", "runway_landing"],
                 featuredChallenges: ["Exploración entre dunas", "Cadena de piezas", "Aterrizaje final en arena"],
                 environmentModifiers: {
                     supportFuelCap: 6
@@ -2948,7 +3030,7 @@
                     groundColor: 0x4f7c52,
                     gridOpacity: 0.15
                 },
-                missionPool: ["beacon_run", "beacon_run", "letters", "cargo_run"],
+                missionPool: ["beacon_run", "arch_run", "letters", "cargo_run"],
                 featuredChallenges: ["Beacons en ruinas", "Ruta de templos", "Entrega final entre lianas"],
                 environmentModifiers: {
                     supportFuelCap: 6
@@ -3060,6 +3142,8 @@
             },
             raceGhosts: {},
             hints: {},
+            achievements: {},
+            daily: null,
             records: {
                 bestDistance: 0,
                 bestScore: 0,
@@ -3147,7 +3231,7 @@
         const runStats = {
             combo: 0, comboTimer: 0, comboWindow: 4.5, bestCombo: 0, nearMisses: 0,
             lowFlightTime: 0, lowFlightTick: 0, styleScore: 0, nearMissCooldown: 0,
-            wasStalling: false, time: 0
+            wasStalling: false, time: 0, boostRings: 0, landed: false
         };
         const uiPopupLayer = document.getElementById("popup-layer");
         const uiScreenFlash = document.getElementById("screen-flash");
@@ -3321,6 +3405,10 @@
                 panel.classList.toggle("is-hidden", !isActive);
             });
             screenStart.classList.toggle("sheet-open", !!activeMetaSection);
+            if (activeMetaSection !== "hangar" && menuAircraftPreviewId) {
+                menuAircraftPreviewId = null;
+                if (saveState) refreshMetaUi();
+            }
             if (activeMetaSection !== "world" && menuWorldPreviewId) {
                 menuWorldPreviewId = null;
                 if (saveState) refreshMetaUi();
@@ -3383,6 +3471,7 @@
             merged.records = { ...base.records, ...(incoming.records || {}) };
             merged.totals = { ...base.totals, ...(incoming.totals || {}) };
             merged.hints = { ...base.hints, ...(incoming.hints || {}) };
+            merged.achievements = { ...base.achievements, ...(incoming.achievements || {}) };
             return merged;
         }
 
@@ -3412,6 +3501,7 @@
         }
 
         let menuWorldPreviewId = null;
+        let menuAircraftPreviewId = null;
 
         function getMenuWorldProfile() {
             return WORLD_PROFILES[menuWorldPreviewId] || getSelectedWorldProfile();
@@ -3485,7 +3575,7 @@
             currentAircraftProfile = getSelectedAircraftProfile();
             currentWorldProfile = getSelectedWorldProfile();
             const stats = getAircraftStats(currentAircraftProfile);
-            applyAircraftLivery(currentAircraftProfile);
+            applyAircraftLivery(AIRCRAFT_PROFILES[menuAircraftPreviewId] || currentAircraftProfile);
 
             maxFuel = stats.fuel.capacity;
             currentFuel = maxFuel;
@@ -3538,6 +3628,21 @@
                 placeShipForMenu();
                 return;
             }
+            if (kind === "aircraft") {
+                const ids = getAircraftIds();
+                const currentId = menuAircraftPreviewId || saveState.selectedAircraftId;
+                const nextId = ids[(ids.indexOf(currentId) + direction + ids.length) % ids.length];
+                if (saveState.unlockedAircraftIds.includes(nextId)) {
+                    saveState.selectedAircraftId = nextId;
+                    menuAircraftPreviewId = null;
+                    saveProgress();
+                } else {
+                    menuAircraftPreviewId = nextId;
+                }
+                refreshMetaUi();
+                GameAudio.play("select");
+                return;
+            }
             const ids = kind === "aircraft" ? getAircraftIds() : getWorldIds();
             const selectedId = kind === "aircraft" ? saveState.selectedAircraftId : saveState.selectedWorldId;
             const unlocked = kind === "aircraft" ? saveState.unlockedAircraftIds : saveState.unlockedWorldIds;
@@ -3573,8 +3678,10 @@
             saveState.currencies.credits -= cost;
             saveState.currencies.parts -= parts;
             saveState.upgrades[upgradeId] = level + 1;
+            const earned = evaluateMetaProgress(null);
             saveProgress();
             refreshMetaUi();
+            if (earned.length) showMissionToast(earned[0].text);
             GameAudio.play("unlock");
         }
 
@@ -3584,14 +3691,26 @@
 
         function refreshMetaUi() {
             applySelectedLoadout();
-            const aircraft = currentAircraftProfile;
+            const aircraft = AIRCRAFT_PROFILES[menuAircraftPreviewId] || currentAircraftProfile;
+            const aircraftLocked = !saveState.unlockedAircraftIds.includes(aircraft.id);
             const world = getMenuWorldProfile();
             const worldLocked = !saveState.unlockedWorldIds.includes(world.id);
             const stats = getAircraftStats(aircraft);
             const levelTheme = getWorldTheme(world);
 
-            uiMetaAircraftName.innerText = aircraft.displayName;
-            uiMetaAircraftCopy.innerText = aircraft.blurb;
+            uiMetaAircraftName.innerText = aircraftLocked ? `🔒 ${aircraft.displayName}` : aircraft.displayName;
+            const buyBtn = document.getElementById("aircraft-buy-btn");
+            buyBtn.hidden = !(aircraftLocked && aircraft.price);
+            if (aircraftLocked && aircraft.price) {
+                const affordable = saveState.currencies.credits >= aircraft.price.credits && saveState.currencies.parts >= aircraft.price.parts;
+                buyBtn.disabled = !affordable;
+                buyBtn.textContent = `Comprar · ${aircraft.price.credits} cr + ${aircraft.price.parts} parts`;
+                uiMetaAircraftCopy.innerText = `${aircraft.blurb}`;
+            } else if (aircraftLocked) {
+                uiMetaAircraftCopy.innerText = `Bloqueado · vuela ${AIRCRAFT_UNLOCK_DISTANCE[aircraft.id]} m en un solo vuelo para desbloquearlo.`;
+            } else {
+                uiMetaAircraftCopy.innerText = aircraft.blurb;
+            }
             renderMetaStats(uiMetaAircraftStats, [
                 { label: "Velocidad", value: `${Math.round(stats.handling.baseSpeed)} km/h` },
                 { label: "Depósito", value: `${Math.round(stats.fuel.capacity)} L` },
@@ -3612,22 +3731,23 @@
                 { label: "Tu récord", value: worldBest ? `${worldBest.toLocaleString("es-ES")} pts` : "—" }
             ]);
             const startBtn = document.getElementById("start-btn");
-            startBtn.disabled = worldLocked;
-            startBtn.textContent = worldLocked ? `🔒 ${WORLD_UNLOCK_DISTANCE[world.id]} m` : "JUGAR";
+            startBtn.disabled = worldLocked || aircraftLocked;
+            startBtn.textContent = worldLocked ? `🔒 ${WORLD_UNLOCK_DISTANCE[world.id]} m` : aircraftLocked ? "🔒 AVIÓN BLOQUEADO" : "JUGAR";
 
-            uiMetaMissionBoard.innerHTML = world.featuredChallenges.map((entry, index) => `<span><strong>${index + 1}. ${entry}</strong><em>${missionDefs[index % missionDefs.length].title}</em></span>`).join("");
+            const routeHtml = world.missionPool.map((id, index) => `<span><strong>${index + 1}. ${MISSION_LIBRARY[id]?.title || id}</strong><em>${world.featuredChallenges[index] || ""}</em></span>`).join("");
+            uiMetaMissionBoard.innerHTML = `<div class="ach-head">Contratos del día</div>${renderContractsHtml()}<div class="ach-head">Ruta de ${world.displayName}</div>${routeHtml}`;
             uiMetaDiscoveryLog.innerHTML = [
                 `<span><strong>Mejor distancia</strong><em>${saveState.records.bestDistance} m</em></span>`,
                 `<span><strong>Mejor score</strong><em>${saveState.records.bestScore}</em></span>`,
                 `<span><strong>Runs</strong><em>${saveState.totals.runs}</em></span>`,
                 `<span><strong>Misiones completadas</strong><em>${saveState.totals.missionsCompleted}</em></span>`,
                 `<span><strong>Coleccionables</strong><em>${saveState.totals.collectiblesFound}</em></span>`
-            ].join("");
+            ].join("") + renderAchievementsHtml();
 
             uiMetaCredits.innerText = `Créditos: ${saveState.currencies.credits}`;
             uiMetaDiscovery.innerText = `Discovery: ${saveState.currencies.discovery}`;
             uiMetaParts.innerText = `Parts: ${saveState.currencies.parts}`;
-            uiStartLoadoutAircraft.innerText = aircraft.displayName;
+            uiStartLoadoutAircraft.innerText = currentAircraftProfile.displayName;
             uiStartLoadoutWorld.innerText = world.displayName;
             uiStartShowcaseAircraft.innerText = aircraft.displayName;
             uiStartShowcaseWorld.innerText = world.displayName;
@@ -3663,9 +3783,14 @@
             const lockedWorlds = getWorldIds().length - saveState.unlockedWorldIds.length;
 
             setMenuBadge(uiMenuBadgeWorkshop, affordableUpgrades);
-            setMenuBadge(uiMenuBadgeHangar, lockedAircraft > 0 ? -1 : 0);
+            const purchasable = getAircraftIds().filter((id) => {
+                const prof = AIRCRAFT_PROFILES[id];
+                return !saveState.unlockedAircraftIds.includes(id) && prof.price && saveState.currencies.credits >= prof.price.credits && saveState.currencies.parts >= prof.price.parts;
+            }).length;
+            setMenuBadge(uiMenuBadgeHangar, purchasable > 0 ? purchasable : 0);
             setMenuBadge(uiMenuBadgeWorld, lockedWorlds > 0 ? -1 : 0);
-            setMenuBadge(uiMenuBadgeMissions, -1, "!");
+            const dailyState = ensureDailyContracts();
+            setMenuBadge(uiMenuBadgeMissions, dailyState.ids.filter((id) => !dailyState.claimed[id]).length);
             setMenuBadge(uiMenuBadgeDiscovery, saveState.records.bestDistance > 0 ? -1 : 0);
         }
 
@@ -3721,6 +3846,127 @@
             return { credits: creditsEarned, discovery: discoveryEarned, parts: partsEarned, unlocks };
         }
 
+
+
+        // ---------- Meta progression: achievements & daily contracts ----------
+        const ACHIEVEMENTS = [
+            { id: "first_flight", icon: "🛫", name: "Primer despegue", desc: "Completa tu primer vuelo", reward: 50, check: (r, s) => s.totals.runs >= 1 },
+            { id: "first_landing", icon: "🛬", name: "Tren abajo", desc: "Aterriza de forma controlada", reward: 120, check: (r) => r.landed },
+            { id: "combo5", icon: "🔥", name: "Encadenado", desc: "Alcanza un combo x5", reward: 150, check: (r) => r.bestCombo >= 5 },
+            { id: "near10", icon: "🧊", name: "Sangre fría", desc: "10 roces en un mismo vuelo", reward: 200, check: (r) => r.nearMisses >= 10 },
+            { id: "route", icon: "🗺️", name: "Ruta completa", desc: "Completa todas las misiones de un mundo", reward: 250, check: (r) => r.routeComplete },
+            { id: "lap3", icon: "♾️", name: "Incansable", desc: "Llega a la vuelta 3 de una ruta", reward: 400, check: (r) => r.lap >= 3 },
+            { id: "dist5k", icon: "📏", name: "Largo alcance", desc: "Vuela 5000 m en un vuelo", reward: 200, check: (r) => r.distance >= 5000 },
+            { id: "score3k", icon: "⭐", name: "As del cielo", desc: "Consigue 3000 pts en un vuelo", reward: 250, check: (r) => r.score >= 3000 },
+            { id: "rings20", icon: "💨", name: "Corriente de chorro", desc: "Atraviesa 20 anillos en un vuelo", reward: 200, check: (r) => r.boostRings >= 20 },
+            { id: "explorer", icon: "🧭", name: "Explorador", desc: "Desbloquea 5 mundos", reward: 300, check: (r, s) => s.unlockedWorldIds.length >= 5 },
+            { id: "tour", icon: "🌍", name: "Gira mundial", desc: "Vuela en 5 mundos distintos", reward: 300, check: (r, s) => Object.keys(s.records.worldBest || {}).length >= 5 },
+            { id: "mechanic", icon: "🔧", name: "Mecánico jefe", desc: "Lleva todas las mejoras al máximo", reward: 500, check: (r, s) => Object.keys(UPGRADE_DEFS).every((k) => (s.upgrades[k] || 0) >= UPGRADE_DEFS[k].maxLevel) }
+        ];
+
+        const CONTRACT_POOL = [
+            { id: "rings", label: "Atraviesa 12 anillos de impulso", stat: "boostRings", target: 12, reward: { credits: 120 } },
+            { id: "near", label: "Consigue 6 roces", stat: "nearMisses", target: 6, reward: { credits: 140, parts: 1 } },
+            { id: "missions", label: "Completa 4 misiones", stat: "missions", target: 4, reward: { credits: 150 } },
+            { id: "distance", label: "Vuela 6000 m en total", stat: "distance", target: 6000, reward: { credits: 130 } },
+            { id: "landing", label: "Aterriza de forma controlada", stat: "landings", target: 1, reward: { credits: 100, parts: 2 } },
+            { id: "combo", label: "Alcanza un combo x4", stat: "bestCombo", target: 4, mode: "max", reward: { credits: 120 } },
+            { id: "score", label: "Haz 1500 pts en un vuelo", stat: "score", target: 1500, mode: "max", reward: { credits: 160, parts: 1 } },
+            { id: "collect", label: "Recoge 15 coleccionables", stat: "collectibles", target: 15, reward: { credits: 130 } },
+            { id: "lowflight", label: "Vuela 20 s en rasante", stat: "lowFlight", target: 20, reward: { credits: 110 } }
+        ];
+
+        function todayKey() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        }
+
+        function ensureDailyContracts() {
+            const key = todayKey();
+            if (saveState.daily && saveState.daily.date === key) return saveState.daily;
+            let seed = 0;
+            for (const ch of key) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+            const pool = CONTRACT_POOL.map((c) => c.id);
+            const ids = [];
+            while (ids.length < 3) {
+                seed = (seed * 1103515245 + 12345) >>> 0;
+                const pick = pool.splice(seed % pool.length, 1)[0];
+                ids.push(pick);
+            }
+            saveState.daily = { date: key, ids, progress: {}, claimed: {} };
+            saveProgress();
+            return saveState.daily;
+        }
+
+        function buildRunSummary() {
+            return {
+                landed: runStats.landed,
+                bestCombo: runStats.bestCombo,
+                nearMisses: runStats.nearMisses,
+                routeComplete: (missionState.lap || 1) >= 2 || missionState.sequenceComplete,
+                lap: missionState.lap || 1,
+                distance: Math.floor(accumulatedDistance),
+                score: Math.floor(score),
+                boostRings: runStats.boostRings,
+                missions: missionState.completedCount,
+                landings: runStats.landed ? 1 : 0,
+                collectibles: missionState.totalCollectibles,
+                lowFlight: Math.floor(runStats.lowFlightTime)
+            };
+        }
+
+        function grantReward(reward) {
+            saveState.currencies.credits += reward.credits || 0;
+            saveState.currencies.parts += reward.parts || 0;
+        }
+
+        // Returns human readable lines of everything newly earned.
+        function evaluateMetaProgress(summary) {
+            const earned = [];
+            ACHIEVEMENTS.forEach((ach) => {
+                if (saveState.achievements[ach.id]) return;
+                if (!ach.check(summary || {}, saveState)) return;
+                saveState.achievements[ach.id] = Date.now();
+                grantReward({ credits: ach.reward });
+                earned.push({ type: "achievement", text: `${ach.icon} Logro: ${ach.name} (+${ach.reward} cr)` });
+            });
+            if (summary) {
+                const daily = ensureDailyContracts();
+                daily.ids.forEach((id) => {
+                    const def = CONTRACT_POOL.find((c) => c.id === id);
+                    if (!def || daily.claimed[id]) return;
+                    const value = summary[def.stat] || 0;
+                    daily.progress[id] = def.mode === "max" ? Math.max(daily.progress[id] || 0, value) : (daily.progress[id] || 0) + value;
+                    if (daily.progress[id] >= def.target) {
+                        daily.claimed[id] = true;
+                        grantReward(def.reward);
+                        earned.push({ type: "contract", text: `📋 Contrato: ${def.label} (+${def.reward.credits} cr${def.reward.parts ? ` +${def.reward.parts} parts` : ""})` });
+                    }
+                });
+            }
+            saveProgress();
+            return earned;
+        }
+
+        function renderContractsHtml() {
+            const daily = ensureDailyContracts();
+            return daily.ids.map((id) => {
+                const def = CONTRACT_POOL.find((c) => c.id === id);
+                const progress = Math.min(def.target, daily.progress[id] || 0);
+                const done = !!daily.claimed[id];
+                const pct = Math.round((progress / def.target) * 100);
+                const reward = `${def.reward.credits} cr${def.reward.parts ? ` · ${def.reward.parts} parts` : ""}`;
+                return `<div class="contract-row ${done ? "done" : ""}"><div class="contract-top"><strong>${done ? "✔ " : ""}${def.label}</strong><em>${reward}</em></div><div class="contract-bar"><div style="width:${pct}%"></div></div><small>${done ? "Completado" : `${progress.toLocaleString("es-ES")} / ${def.target.toLocaleString("es-ES")}`}</small></div>`;
+            }).join("");
+        }
+
+        function renderAchievementsHtml() {
+            const unlocked = ACHIEVEMENTS.filter((a) => saveState.achievements[a.id]).length;
+            return `<div class="ach-head">Logros ${unlocked} / ${ACHIEVEMENTS.length}</div><div class="ach-grid">${ACHIEVEMENTS.map((a) => {
+                const got = !!saveState.achievements[a.id];
+                return `<div class="ach ${got ? "got" : ""}" title="${a.desc}"><span class="ach-icon">${got ? a.icon : "🔒"}</span><strong>${a.name}</strong><small>${a.desc}</small></div>`;
+            }).join("")}</div>`;
+        }
 
         // ---------- Feel layer: popups, combo, style bonuses, pause ----------
         function worldToScreen(position) {
@@ -3865,7 +4111,7 @@
         function resetRunStats() {
             Object.assign(runStats, {
                 combo: 0, comboTimer: 0, bestCombo: 0, nearMisses: 0, lowFlightTime: 0, lowFlightTick: 0,
-                styleScore: 0, nearMissCooldown: 0, wasStalling: false, time: 0
+                styleScore: 0, nearMissCooldown: 0, wasStalling: false, time: 0, boostRings: 0, landed: false
             });
             uiPopupLayer.innerHTML = "";
             uiHintBanner.classList.remove("visible");
@@ -3995,15 +4241,18 @@
             const chips = [`+${rewards.credits} créditos`, `+${rewards.discovery} discovery`];
             if (rewards.parts > 0) chips.push(`+${rewards.parts} parts`);
             uiResultsRewards.innerHTML = chips.map((chip) => `<div class="reward-chip">${chip}</div>`).join("");
-            uiResultsUnlock.hidden = rewards.unlocks.length === 0;
-            uiResultsUnlock.textContent = rewards.unlocks.length ? `¡Desbloqueado! ${rewards.unlocks.join(" · ")}` : "";
+            const unlockLines = [];
+            if (rewards.unlocks.length) unlockLines.push(`🔓 ¡Desbloqueado! ${rewards.unlocks.join(" · ")}`);
+            (rewards.meta || []).forEach((entry) => unlockLines.push(entry.text));
+            uiResultsUnlock.hidden = unlockLines.length === 0;
+            uiResultsUnlock.innerHTML = unlockLines.map((line) => `<div>${line}</div>`).join("");
             const tips = {
                 crash: "Consejo: vuela entre montañas sin tocarlas para ganar bonus de ROZANDO, pero vigila la altura de sus cumbres.",
                 skid: "Consejo: para aterrizar, nivela el avión, reduce velocidad por debajo de la zona verde y mantén la aproximación ~2 s.",
                 landing: "¡Buen piloto! Los aterrizajes controlados dan Parts para mejorar tu avión en el Taller."
             };
             uiResultsTip.textContent = tips[result] || "";
-            if (rewards.unlocks.length) setTimeout(() => GameAudio.play("unlock"), 700);
+            if (rewards.unlocks.length || (rewards.meta || []).length) setTimeout(() => GameAudio.play("unlock"), 700);
         }
 
         function init() {
@@ -4071,6 +4320,20 @@
             refreshAudioButtons();
             uiAircraftPrevBtn.addEventListener("click", () => cycleSelection("aircraft", -1));
             uiAircraftNextBtn.addEventListener("click", () => cycleSelection("aircraft", 1));
+            document.getElementById("aircraft-buy-btn").addEventListener("click", () => {
+                const profile = AIRCRAFT_PROFILES[menuAircraftPreviewId];
+                if (!profile?.price) return;
+                if (saveState.currencies.credits < profile.price.credits || saveState.currencies.parts < profile.price.parts) return;
+                saveState.currencies.credits -= profile.price.credits;
+                saveState.currencies.parts -= profile.price.parts;
+                saveState.unlockedAircraftIds.push(profile.id);
+                saveState.selectedAircraftId = profile.id;
+                menuAircraftPreviewId = null;
+                saveProgress();
+                refreshMetaUi();
+                GameAudio.play("unlock");
+                showMissionToast(`¡${profile.displayName} añadido al hangar!`);
+            });
             uiWorldPrevBtn.addEventListener("click", () => cycleSelection("world", -1));
             uiWorldNextBtn.addEventListener("click", () => cycleSelection("world", 1));
             uiUpgradeFuelBtn.addEventListener("click", () => purchaseUpgrade("fuel_tank"));
@@ -4224,8 +4487,16 @@
         let propellerDisc;
         let navLights = [];
 
-        function createPlayerShip() {
+        const SHIP_VARIANTS = {
+            spitfire_starter: { span: 1, body: 1, blades: 3, twin: false, winglets: false, twinTail: false },
+            spitfire_scout: { span: 0.84, body: 0.86, blades: 2, twin: false, winglets: true, twinTail: false },
+            cargo_twin: { span: 1.3, body: 1.28, blades: 3, twin: true, winglets: false, twinTail: true }
+        };
+
+        function createPlayerShip(prefab = "spitfire_starter") {
+            const V = SHIP_VARIANTS[prefab] || SHIP_VARIANTS.spitfire_starter;
             playerShip = new THREE.Group();
+            playerShip.userData.prefab = SHIP_VARIANTS[prefab] ? prefab : "spitfire_starter";
             playerShip.rotation.order = "YXZ";
             aileronSurfaces = [];
             flapSurfaces = [];
@@ -4254,19 +4525,23 @@
             ].map(([r, z]) => new THREE.Vector2(r, z));
             const fuselageGeom = new THREE.LatheGeometry(profile, 18);
             fuselageGeom.rotateX(Math.PI / 2);
+            fuselageGeom.scale(V.body, V.body, 1);
             addPart(new THREE.Mesh(fuselageGeom, primaryMat));
 
             // Belly panel in the secondary colour.
             const bellyGeom = new THREE.LatheGeometry(profile.map((p) => new THREE.Vector2(p.x * 1.02, p.y)), 18, -Math.PI * 0.38, Math.PI * 0.76);
             bellyGeom.rotateX(Math.PI / 2);
+            bellyGeom.scale(V.body, V.body, 1);
             addPart(new THREE.Mesh(bellyGeom, secondaryMat));
 
             // Engine cowl ring + accent band.
             const cowl = addPart(new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.3, 1.4, 20, 1, true), darkMat));
             cowl.rotation.x = Math.PI / 2;
             cowl.position.z = -7.0;
+            cowl.scale.set(V.body, 1, V.body);
             const band = addPart(new THREE.Mesh(new THREE.TorusGeometry(1.47, 0.12, 8, 28), accentMat));
             band.position.z = -6.1;
+            band.scale.set(V.body, V.body, 1);
             const spinner = addPart(new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.5, 16), accentMat));
             spinner.rotation.x = -Math.PI / 2;
             spinner.position.z = -9.2;
@@ -4274,13 +4549,13 @@
             // Canopy with frame.
             const canopy = addPart(new THREE.Mesh(new THREE.SphereGeometry(1.0, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2), canopyMat));
             canopy.scale.set(0.95, 1.05, 2.1);
-            canopy.position.set(0, 1.12, -0.6);
+            canopy.position.set(0, 1.12 * V.body, V.twin ? -4.2 : -0.6);
             const frame = addPart(new THREE.Mesh(new THREE.TorusGeometry(0.98, 0.07, 6, 20, Math.PI), darkMat));
-            frame.position.set(0, 1.12, -0.4);
+            frame.position.set(0, 1.12 * V.body, V.twin ? -4.0 : -0.4);
             const headrest = addPart(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.3), darkMat));
-            headrest.position.set(0, 1.45, 0.6);
+            headrest.position.set(0, 1.12 * V.body + 0.15, V.twin ? -3.0 : 0.6);
             const spine = addPart(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 4.6), primaryMat));
-            spine.position.set(0, 1.0, 3.0);
+            spine.position.set(0, 1.0 * V.body, 3.0);
             spine.rotation.x = 0.1;
 
             // Wings: elliptical planform with accent tips.
@@ -4297,8 +4572,9 @@
             const leftWing = addPart(new THREE.Mesh(wingGeom, primaryMat));
             leftWing.position.set(-1.0, -0.15, 0);
             leftWing.rotation.z = -0.05;
+            leftWing.scale.x = V.span;
             const rightWing = addPart(new THREE.Mesh(wingGeom, primaryMat));
-            rightWing.scale.x = -1;
+            rightWing.scale.x = -V.span;
             rightWing.position.set(1.0, -0.15, 0);
             rightWing.rotation.z = 0.05;
 
@@ -4306,18 +4582,23 @@
             [-1, 1].forEach((side) => {
                 const roundel = new THREE.Mesh(new THREE.CircleGeometry(0.62, 20), secondaryMat);
                 roundel.rotation.x = -Math.PI / 2;
-                roundel.position.set(side * 5.1, 0.25, 0.75);
+                roundel.position.set(side * 5.1 * V.span, 0.25, 0.75);
                 playerShip.add(roundel);
                 const dot = new THREE.Mesh(new THREE.CircleGeometry(0.3, 16), accentMat);
                 dot.rotation.x = -Math.PI / 2;
-                dot.position.set(side * 5.1, 0.26, 0.75);
+                dot.position.set(side * 5.1 * V.span, 0.26, 0.75);
                 playerShip.add(dot);
                 const tip = addPart(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 1.1), accentMat));
-                tip.position.set(side * 7.9, 0.05 + 0.4 * 0.05, 1.15);
+                tip.position.set(side * (1 + 6.9 * V.span), 0.07, 1.15);
+                if (V.winglets) {
+                    const winglet = addPart(new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 1.0), accentMat));
+                    winglet.position.set(side * (1.3 + 6.9 * V.span), 0.55, 1.3);
+                    winglet.rotation.z = side * -0.25;
+                }
 
                 const navColor = side < 0 ? 0xff3b30 : 0x34ff6a;
                 const light = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: navColor }));
-                light.position.set(side * 8.4, 0.1, 1.0);
+                light.position.set(side * (1.5 + 6.9 * V.span), 0.1, 1.0);
                 playerShip.add(light);
                 const glow = createGlowSprite(side < 0 ? "rgba(255,70,60,0.9)" : "rgba(60,255,110,0.9)", 3.2, 0.7);
                 glow.position.copy(light.position);
@@ -4334,8 +4615,8 @@
                 return pivot;
             }
 
-            aileronSurfaces.push(makeWingSurface(1.9, 0.42, -4.6, 1.15, -1));
-            aileronSurfaces.push(makeWingSurface(1.9, 0.42, 4.6, 1.15, 1));
+            aileronSurfaces.push(makeWingSurface(1.9, 0.42, -4.6 * V.span, 1.15, -1));
+            aileronSurfaces.push(makeWingSurface(1.9, 0.42, 4.6 * V.span, 1.15, 1));
             flapSurfaces.push(makeWingSurface(1.8, 0.45, -1.4, 1.35, -1));
             flapSurfaces.push(makeWingSurface(1.8, 0.45, 1.4, 1.35, 1));
 
@@ -4375,35 +4656,78 @@
             const finGeom = new THREE.ExtrudeGeometry(finShape, { depth: 0.16, bevelEnabled: false });
             finGeom.rotateY(Math.PI / 2);
             finGeom.translate(-0.08, 0, 7.4);
-            const fin = addPart(new THREE.Mesh(finGeom, primaryMat));
-            fin.position.y = 0.55;
+            if (V.twinTail) {
+                [-1, 1].forEach((side) => {
+                    const sideFin = addPart(new THREE.Mesh(finGeom, primaryMat));
+                    sideFin.position.set(side * 2.6, 0.35, 0);
+                    sideFin.scale.set(1, 0.8, 1);
+                });
+            } else {
+                const fin = addPart(new THREE.Mesh(finGeom, primaryMat));
+                fin.position.y = 0.55;
+            }
             const finStripe = addPart(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.45, 1.6), accentMat));
             finStripe.position.set(0, 2.55, 6.15);
+            finStripe.visible = !V.twinTail;
 
             rudderSurface = new THREE.Group();
             rudderSurface.position.set(0, 1.7, 7.35);
+            rudderSurface.visible = !V.twinTail;
             const rudderMesh = addPart(new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.9, 0.55), secondaryMat), rudderSurface);
             rudderMesh.position.z = 0.27;
             playerShip.add(rudderSurface);
 
             // Propeller: blades + motion-blur disc.
-            propellerMesh = new THREE.Group();
+            // Propeller rotor(s). Twin variants mount one rotor per wing nacelle and
+            // keep propellerMesh as the shared spinning parent API.
             const bladeGeom = new THREE.BoxGeometry(0.12, 3.4, 0.36);
             bladeGeom.translate(0, 1.7, 0);
-            for (let i = 0; i < 3; i++) {
-                const blade = addPart(new THREE.Mesh(bladeGeom, darkMat));
-                blade.rotation.z = i * ((Math.PI * 2) / 3);
-                blade.rotation.y = 0.25;
-                propellerMesh.add(blade);
-                const tipMark = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.4, 0.38), accentMat);
-                tipMark.position.y = 3.2;
-                const tipPivot = new THREE.Group();
-                tipPivot.rotation.z = blade.rotation.z;
-                tipPivot.add(tipMark);
-                propellerMesh.add(tipPivot);
+            const makeRotor = () => {
+                const rotor = new THREE.Group();
+                for (let i = 0; i < V.blades; i++) {
+                    const blade = addPart(new THREE.Mesh(bladeGeom, darkMat));
+                    blade.rotation.z = i * ((Math.PI * 2) / V.blades);
+                    blade.rotation.y = 0.25;
+                    rotor.add(blade);
+                    const tipMark = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.4, 0.38), accentMat);
+                    tipMark.position.y = 3.2;
+                    const tipPivot = new THREE.Group();
+                    tipPivot.rotation.z = blade.rotation.z;
+                    tipPivot.add(tipMark);
+                    rotor.add(tipPivot);
+                }
+                return rotor;
+            };
+            const rotorMounts = V.twin ? [[-3.9, -0.2, -4.6], [3.9, -0.2, -4.6]] : [[0, 0, -9.7]];
+            const rotors = rotorMounts.map(([x, y, z]) => {
+                const rotor = makeRotor();
+                rotor.position.set(x, y, z);
+                playerShip.add(rotor);
+                return rotor;
+            });
+            // propellerMesh spins every rotor; its children are the rotors' parts for blur toggling.
+            propellerMesh = {
+                rotation: { get z() { return rotors[0].rotation.z; }, set z(v) { rotors.forEach((r, i) => { r.rotation.z = i % 2 ? -v : v; }); } },
+                children: rotors.flatMap((r) => r.children)
+            };
+            if (V.twin) {
+                rotorMounts.forEach(([x, y, z]) => {
+                    const nacelle = addPart(new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.6, 4.2, 14), primaryMat));
+                    nacelle.rotation.x = Math.PI / 2;
+                    nacelle.position.set(x, y, z + 2.2);
+                    const nacelleSpinner = addPart(new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.0, 12), accentMat));
+                    nacelleSpinner.rotation.x = -Math.PI / 2;
+                    nacelleSpinner.position.set(x, y, z - 0.35);
+                    const ring = addPart(new THREE.Mesh(new THREE.TorusGeometry(0.76, 0.1, 6, 20), accentMat));
+                    ring.position.set(x, y, z + 0.6);
+                });
+                cowl.visible = false;
+                band.visible = false;
+                const glassNose = addPart(new THREE.Mesh(new THREE.SphereGeometry(1.3 * V.body, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), canopyMat));
+                glassNose.rotation.x = -Math.PI / 2;
+                glassNose.position.z = -7.6;
+                spinner.visible = false;
             }
-            propellerMesh.position.z = -9.7;
-            playerShip.add(propellerMesh);
 
             const discCanvas = document.createElement("canvas");
             discCanvas.width = discCanvas.height = 128;
@@ -4419,15 +4743,21 @@
                 new THREE.CircleGeometry(3.5, 32),
                 new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(discCanvas), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })
             );
-            propellerDisc.position.z = -9.75;
+            propellerDisc.position.set(rotorMounts[0][0], rotorMounts[0][1], rotorMounts[0][2] - 0.05);
             playerShip.add(propellerDisc);
+            if (V.twin) {
+                propellerDisc.scale.setScalar(0.95);
+                const secondDisc = new THREE.Mesh(propellerDisc.geometry, propellerDisc.material);
+                secondDisc.position.set(rotorMounts[1][0] - rotorMounts[0][0], 0, 0);
+                propellerDisc.add(secondDisc);
+            }
 
             // Exhaust stubs.
             [-1, 1].forEach((side) => {
                 for (let i = 0; i < 3; i++) {
                     const stub = addPart(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, 0.45, 6), metalMat));
                     stub.rotation.z = side * Math.PI / 2;
-                    stub.position.set(side * 1.42, 0.35, -5.3 + i * 0.55);
+                    stub.position.set(side * 1.42 * V.body, 0.35, -5.3 + i * 0.55);
                 }
             });
 
@@ -4460,10 +4790,10 @@
             flameGeom.translate(0, 0, 0.7);
             const flameMat = new THREE.MeshBasicMaterial({ color: 0xff8a2a, transparent: true, opacity: 0.82, blending: THREE.AdditiveBlending, depthWrite: false });
             engineMesh = new THREE.Mesh(flameGeom, flameMat);
-            engineMesh.position.set(-1.62, 0.35, -4.4);
+            engineMesh.position.set(-1.62 * V.body, 0.35, -4.4);
             engineMesh.name = "engineGlow";
             const flameRight = new THREE.Mesh(flameGeom, flameMat);
-            flameRight.position.x = 3.24;
+            flameRight.position.x = 3.24 * V.body;
             engineMesh.add(flameRight);
             playerShip.add(engineMesh);
 
@@ -4477,7 +4807,26 @@
             scene.add(playerShip);
         }
 
+        function rebuildPlayerShip(profile) {
+            const prefab = profile?.visualPrefab || "spitfire_starter";
+            if (playerShip && playerShip.userData.prefab === prefab) return;
+            const position = playerShip ? playerShip.position.clone() : new THREE.Vector3();
+            const wasVisible = playerShip ? playerShip.visible : true;
+            if (playerShip) scene.remove(playerShip);
+            createPlayerShip(prefab);
+            playerShip.userData.prefab = prefab;
+            playerShip.position.copy(position);
+            playerShip.visible = wasVisible;
+            wingTrails.forEach((trail) => {
+                trail.position.x = Math.sign(trail.position.x) * 7 * (SHIP_VARIANTS[prefab]?.span || 1);
+                playerShip.add(trail);
+            });
+            applyFlightTransform();
+        }
+
         function applyAircraftLivery(profile) {
+            rebuildPlayerShip(profile);
+            debrisParticles.forEach((d, i) => { d.material = i % 3 === 0 ? shipMaterials.secondary : i % 3 === 1 ? shipMaterials.primary : shipMaterials.accent; });
             const livery = profile?.livery;
             if (!livery || !shipMaterials.primary) return;
             shipMaterials.primary.color.setHex(livery.primary);
@@ -4676,8 +5025,9 @@
         }
 
         function startGame() {
-            if (menuWorldPreviewId) {
+            if (menuWorldPreviewId || menuAircraftPreviewId) {
                 menuWorldPreviewId = null;
+                menuAircraftPreviewId = null;
                 refreshMetaUi();
             }
             GameAudio.unlock();
@@ -5068,6 +5418,11 @@
                     const lane = lanes[(chunkIndex + i) % lanes.length];
                     positions.push(new THREE.Vector3(lane, 34 + ((chunkIndex + i) % 3) * 12, baseZ - i * 55));
                 }
+            } else if (pattern === "arches") {
+                for (let i = 0; i < count; i++) {
+                    const lane = (((chunkIndex * 41) + i * 67) % 5 - 2) * 50;
+                    positions.push(new THREE.Vector3(lane, 0, baseZ - i * 110));
+                }
             } else if (pattern === "groundCluster") {
                 for (let i = 0; i < count; i++) {
                     positions.push(new THREE.Vector3(-90 + i * 110, 2, baseZ - i * 70));
@@ -5104,6 +5459,7 @@
             if (mission.targetPrefab === "statuette") return createStatuetteObject(position);
             if (mission.targetPrefab === "letter") return createLetterObject(position);
             if (mission.targetPrefab === "puzzle") return createPuzzleObject(position, localIndex);
+            if (mission.targetPrefab === "arch") return createArchObject(position);
             return createTruckObject(position, localIndex);
         }
 
@@ -5166,6 +5522,7 @@
         function handleBoostRing(object) {
             object.collected = true;
             boostTimer = Math.max(boostTimer, 1.4);
+            runStats.boostRings += 1;
             flightSpeed = Math.min(maxFlightSpeed, flightSpeed + 35);
             currentFov += 7;
             shakeIntensity += 0.35;
@@ -5566,24 +5923,101 @@
             };
         }
 
+        // Natural rock arch: an elliptical half-torus standing on the ground. The
+        // opening is the mission trigger; the rock itself is a crash collider.
+        const ARCH_SCALE = { x: 1.35, y: 1.65, radius: 19, tube: 5.5 };
+        function createArchObject(position) {
+            const pal = WorldGfx.getPalette() || {};
+            const rockColor = new THREE.Color(pal.rock ?? 0x8a7a6a);
+            const geom = new THREE.TorusGeometry(ARCH_SCALE.radius, ARCH_SCALE.tube, 7, 18, Math.PI);
+            const pos = geom.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const n = Math.sin(pos.getX(i) * 0.7) * Math.cos(pos.getY(i) * 0.9) * 0.9;
+                pos.setZ(i, pos.getZ(i) * (1 + n * 0.25));
+            }
+            geom.computeVertexNormals();
+            const rock = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: rockColor, roughness: 0.95, flatShading: true }));
+            rock.scale.set(ARCH_SCALE.x, ARCH_SCALE.y, 1);
+            rock.castShadow = true;
+            rock.receiveShadow = true;
+            const mesh = new THREE.Group();
+            mesh.add(rock);
+            const capColor = new THREE.Color(pal.foliage ?? 0x3a8a3c);
+            const cap = new THREE.Mesh(new THREE.IcosahedronGeometry(5, 0), new THREE.MeshStandardMaterial({ color: capColor, flatShading: true, roughness: 0.9 }));
+            cap.scale.set(2.2, 0.5, 1.4);
+            cap.position.y = (ARCH_SCALE.radius + ARCH_SCALE.tube) * ARCH_SCALE.y - 1.5;
+            cap.castShadow = true;
+            mesh.add(cap);
+            const gate = new THREE.Mesh(
+                new THREE.RingGeometry(9, 10.5, 40),
+                new THREE.MeshBasicMaterial({ color: 0xffe36a, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending })
+            );
+            gate.position.y = 13;
+            mesh.add(gate);
+            const glow = createGlowSprite("rgba(255,227,106,0.5)", 26, 0.14);
+            glow.position.y = 13;
+            mesh.add(glow);
+            mesh.position.set(position.x, 0, position.z);
+            WorldGfx.addClearing(position.x, position.z, 45);
+            return {
+                kind: "missionTarget", missionType: "collect", prefab: "arch", mesh, collected: false,
+                collisionRadius: 0, minimapClass: "mission-collect", rewardFuel: 6, rewardScore: 60, gate
+            };
+        }
+
+        // Returns "pass", "hit" or null for the player against an arch.
+        function testArch(object) {
+            const local = playerShip.position.clone().sub(object.mesh.position);
+            if (Math.abs(local.z) > ARCH_SCALE.tube + 2) return null;
+            const innerX = (ARCH_SCALE.radius - ARCH_SCALE.tube) * ARCH_SCALE.x;
+            const innerY = (ARCH_SCALE.radius - ARCH_SCALE.tube) * ARCH_SCALE.y;
+            const outerX = (ARCH_SCALE.radius + ARCH_SCALE.tube) * ARCH_SCALE.x;
+            const outerY = (ARCH_SCALE.radius + ARCH_SCALE.tube) * ARCH_SCALE.y;
+            const inner = (local.x / innerX) ** 2 + (local.y / innerY) ** 2;
+            const outer = (local.x / outerX) ** 2 + (local.y / outerY) ** 2;
+            if (inner < 0.92) return "pass";
+            if (outer < 0.96) return "hit";
+            return null;
+        }
+
         function createStatuetteObject(position) {
             const mesh = new THREE.Group();
-            const material = new THREE.MeshStandardMaterial({ color: 0xdabf52, emissive: 0x886d12, emissiveIntensity: 0.45, metalness: 0.7, roughness: 0.28 });
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.4, 8, 8), material);
-            body.position.y = 5;
-            body.castShadow = true;
-            const head = new THREE.Mesh(new THREE.SphereGeometry(2.2, 14, 14), material);
-            head.position.y = 10;
-            head.castShadow = true;
-            const base = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.4, 1.4, 10), new THREE.MeshStandardMaterial({ color: 0x6a5320, roughness: 0.6 }));
-            base.position.y = 0.8;
-            base.castShadow = true;
-            mesh.add(body, head, base);
-            const glow = createGlowSprite("rgba(255,225,110,0.55)", 18, 0.18);
+            const gold = new THREE.MeshStandardMaterial({ color: 0xffd45a, emissive: 0xb07400, emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.35 });
+            const stone = new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.7, flatShading: true });
+            const gem = new THREE.MeshStandardMaterial({ color: 0x6fe3ff, emissive: 0x1aa0d0, emissiveIntensity: 0.9, roughness: 0.1, metalness: 0.3, flatShading: true });
+            const profile = [[0, 0], [2.4, 0], [2.6, 0.6], [1.4, 1.2], [1.1, 3.0], [1.6, 5.2], [1.2, 6.4], [0, 6.6]].map(([r, y]) => new THREE.Vector2(r, y));
+            const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 10), gold);
+            body.position.y = 1.2;
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.6, 1.2, 8), stone);
+            base.position.y = 0.6;
+            const head = new THREE.Mesh(new THREE.IcosahedronGeometry(1.7, 1), gold);
+            head.position.y = 9.4;
+            const crest = new THREE.Mesh(new THREE.OctahedronGeometry(1.1, 0), gem);
+            crest.scale.set(1, 1.6, 1);
+            crest.position.y = 11.6;
+            mesh.add(base, body, head, crest);
+            [-1, 1].forEach((side) => {
+                const wingShape = new THREE.Shape();
+                wingShape.moveTo(0, 0);
+                wingShape.quadraticCurveTo(2.5, 2.6, 5.2, 3.4);
+                wingShape.quadraticCurveTo(3.6, 1.4, 4.4, 0.2);
+                wingShape.quadraticCurveTo(2.2, 0.6, 0, -1.2);
+                const wing = new THREE.Mesh(new THREE.ExtrudeGeometry(wingShape, { depth: 0.25, bevelEnabled: false }), gold);
+                wing.scale.x = side;
+                wing.position.set(side * 1.2, 6.2, -0.1);
+                mesh.add(wing);
+            });
+            mesh.children.forEach((child) => { child.castShadow = true; });
+            const halo = new THREE.Mesh(new THREE.TorusGeometry(6.5, 0.18, 6, 40), new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.6 }));
+            halo.rotation.x = Math.PI / 2;
+            halo.position.y = 6;
+            mesh.add(halo);
+            const glow = createGlowSprite("rgba(255,225,110,0.55)", 22, 0.2);
             glow.position.y = 6.5;
             mesh.add(glow);
+            mesh.children.forEach((child) => { child.position.y -= 6; });
             mesh.position.copy(position);
-            return { kind: "missionTarget", missionType: "collect", prefab: "statuette", mesh, collected: false, collisionRadius: 14, minimapClass: "mission-collect", rewardFuel: 15, rewardScore: 40 };
+            return { kind: "missionTarget", missionType: "collect", prefab: "statuette", mesh, collected: false, collisionRadius: 15, minimapClass: "mission-collect", rewardFuel: 15, rewardScore: 40 };
         }
 
         function createLetterObject(position) {
@@ -5792,7 +6226,7 @@
                 const object = worldObjects[i];
                 updateWorldObjectMotion(object, delta);
 
-                if (object.collected) {
+                if (object.collected && object.prefab !== "arch") {
                     scene.remove(object.mesh);
                     worldObjects.splice(i, 1);
                     continue;
@@ -5820,7 +6254,16 @@
                 } else if (object.kind === "missionTarget") {
                     if (object.active === false) continue;
                     updateMissionTargetVisuals(object, delta);
-                    if (object.missionType === "collect" && !isSkidding && playerShip.position.distanceTo(object.mesh.position) < object.collisionRadius) {
+                    if (object.prefab === "arch") {
+                        object.gate.material.opacity = 0.3 + 0.25 * Math.sin(performance.now() * 0.006);
+                        const archResult = isSkidding || isControlledLanding ? null : testArch(object);
+                        if (archResult === "pass") {
+                            handleMissionCollect(object);
+                            object.active = false;
+                            object.gate.visible = false;
+                        }
+                        else if (archResult === "hit") { triggerCriticalCrash("COLISION CON ARCO", "#ff7a5c"); return; }
+                    } else if (object.missionType === "collect" && !isSkidding && playerShip.position.distanceTo(object.mesh.position) < object.collisionRadius) {
                         handleMissionCollect(object);
                     } else if (object.missionType === "reach" && !isSkidding && playerShip.position.distanceTo(object.mesh.position) < object.collisionRadius) {
                         handleMissionReach(object);
@@ -5943,7 +6386,7 @@
             missionState.progress += 1;
             missionState.totalCollectibles += 1;
             currentFuel = Math.min(maxFuel, currentFuel + object.rewardFuel);
-            const collectLabels = { statuette: "ESTATUILLA", letter: "LETRA", puzzle: "PIEZA" };
+            const collectLabels = { statuette: "ESTATUILLA", letter: "LETRA", puzzle: "PIEZA", arch: "¡ARCO!" };
             awardStylePoints(collectLabels[object.prefab] || "OBJETIVO", object.rewardScore, object.mesh.position);
             GameAudio.play("pickup", runStats.combo);
             spawnPickupBurst(object.mesh.position, 0xffe36a, 24);
@@ -6623,6 +7066,7 @@
                         const landingOnRunway = runwayTarget &&
                             new THREE.Vector2(playerShip.position.x - runwayTarget.mesh.position.x, playerShip.position.z - runwayTarget.mesh.position.z).length() <= runwayTarget.landingRadius;
                         isControlledLanding = true;
+                        runStats.landed = true;
                         GameAudio.play("touchdown");
                         awardStylePoints("ATERRIZAJE LIMPIO", 150, playerShip.position, "#9dff7a");
                         targetRotation.x = 0;
@@ -6906,6 +7350,7 @@
             endSequence.startedAt = performance.now();
             const previousRecords = { bestScore: saveState.records.bestScore, runs: saveState.totals.runs };
             const rewards = awardRunRewards(result);
+            rewards.meta = evaluateMetaProgress(buildRunSummary());
             screenGameOver.classList.add("hidden");
             renderResults(result, rewards, previousRecords);
             uiComboMeter.classList.remove("visible");
