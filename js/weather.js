@@ -506,6 +506,7 @@
 
     window.Weather = {
         init, setTheme, update,
+        register(themeId, cfg) { WEATHER[themeId] = Object.assign({ layers: [], ground: {}, fog: 1, wind: 0.2, gust: 0, sun: 1 }, cfg); },
         get name() { return Wx.cfg ? `${Wx.cfg.icon} ${Wx.cfg.name}` : ""; },
         describe(themeId) { const c = WEATHER[themeId]; return c ? `${c.icon} ${c.name}` : ""; },
         get windPush() { return Wx.windPush; },

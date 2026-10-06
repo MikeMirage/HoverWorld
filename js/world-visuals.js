@@ -96,6 +96,19 @@
         aurora_highlands: { trees: ["pine"], snowyTrees: true, crystals: 0.8, houses: 0.08, mountain: "peak", snowLine: 0.35, fields: 0, river: "glow", riverWidth: 20, rocks: 0.8 }
     };
 
+    // ---------- extension registry (world kinds live in world-kinds.js) ----------
+    const EXT = { palettes: {}, decor: {}, kinds: {}, kits: {} };
+    function registerKit(name, def) {
+        EXT.kits[name] = def;
+    }
+    function registerWorld(themeId, palette, decor) {
+        EXT.palettes[themeId] = palette;
+        EXT.decor[themeId] = decor;
+    }
+    function registerKind(kind, def) {
+        EXT.kinds[kind] = def;
+    }
+
     // ---------- helpers ----------
     function mulberry32(seed) {
         let a = seed >>> 0;
@@ -495,6 +508,9 @@
                     uniform float uWaterGlow; uniform float uWaterRough; uniform float uValley;
                     uniform float uWet; uniform float uSnowGlint; uniform float uSandFlow; uniform float uLava; uniform float uCloudShadow;
                     uniform vec2 uWindDir; uniform vec3 uSkyRefl;
+                    uniform float uMode; uniform float uLaneX; uniform float uNight;
+                    float hwEmit = 0.0;
+                    vec3 hwEmitCol = vec3(0.0);
                     float hwPuddle = 0.0;
                     float hwLava = 0.0;
 
@@ -535,16 +551,67 @@
                     g = mix(g, uRockGround, flank * (0.55 + 0.45 * hw_noise(wp * 0.02)));
                     g *= 0.9 + 0.2 * hw_noise(wp * 0.09);
                     g *= 0.96 + 0.08 * hw_noise(wp * 0.7);
-                    if (uRiver > 0.5) {
-                        float d = abs(wp.x - hwRiverX(wp.y));
-                        float bank = smoothstep(uRiverW + 16.0, uRiverW + 3.0, d);
-                        hwWater = smoothstep(uRiverW, uRiverW - 4.0, d);
-                        g = mix(g, uBank, bank);
-                        float ripple = hw_noise(vec2(wp.x * 0.25, wp.y * 0.08 - uTime * 1.2));
-                        vec3 wc = uWater * (0.82 + 0.25 * ripple);
-                        wc = mix(wc * 0.8, wc, smoothstep(0.0, uRiverW, d));
-                        g = mix(g, wc, hwWater);
+                    // Structured floors for special world kinds.
+                    if (uMode > 0.5 && uMode < 1.5) {
+                        // City: asphalt blocks, avenues every 90 m, sidewalks and lane markings.
+                        vec2 cell = mod(wp + vec2(45.0, 45.0), 90.0);
+                        float road = step(cell.x, 14.0) + step(cell.y, 14.0);
+                        road = clamp(road, 0.0, 1.0);
+                        float walk = clamp(step(cell.x, 18.0) + step(cell.y, 18.0), 0.0, 1.0) - road;
+                        vec3 asphalt = vec3(0.16, 0.17, 0.19) * (0.9 + 0.2 * hw_noise(wp * 0.3));
+                        vec3 block = mix(uGroundA, uGroundB, hw_noise(floor(wp / 90.0) * 7.3));
+                        g = mix(block, vec3(0.55, 0.55, 0.53), walk);
+                        g = mix(g, asphalt, road);
+                        float dash = step(0.5, fract(wp.y * 0.08)) * step(abs(cell.x - 7.0), 0.35) + step(0.5, fract(wp.x * 0.08)) * step(abs(cell.y - 7.0), 0.35);
+                        g = mix(g, vec3(0.9, 0.85, 0.6), clamp(dash, 0.0, 1.0) * road);
+                        hwEmit = uNight * road * 0.15;
+                        hwEmitCol = vec3(1.0, 0.75, 0.4);
+                    } else if (uMode > 1.5 && uMode < 2.5) {
+                        // Wooden floor planks (toy-scale interior).
+                        float plank = floor((wp.x + 1000.0) / 14.0);
+                        float along = fract((wp.y + hw_hash(vec2(plank, 1.0)) * 300.0) / 160.0);
+                        float seam = smoothstep(0.0, 0.6, abs(fract((wp.x + 1000.0) / 14.0) - 0.0) * 14.0) * smoothstep(0.0, 0.004, along) * smoothstep(1.0, 0.996, along);
+                        float grain = 0.85 + 0.15 * sin(wp.y * 0.35 + hw_noise(vec2(plank, wp.y * 0.02)) * 6.0);
+                        g = mix(uGroundA, uGroundB, hw_hash(vec2(plank, 3.0))) * grain * mix(0.55, 1.0, seam);
+                        // Rugs under the flight lane.
+                        vec2 rug = vec2(abs(wp.x - uLaneX), mod(wp.y, 900.0));
+                        float rugMask = step(rug.x, 150.0) * step(120.0, rug.y) * step(rug.y, 620.0);
+                        float rugPattern = 0.5 + 0.5 * sin(rug.x * 0.12) * sin(rug.y * 0.05);
+                        g = mix(g, mix(uField, uRockGround, rugPattern), rugMask * 0.9);
+                    } else if (uMode > 2.5 && uMode < 3.5) {
+                        // Sea of clouds: billowing white with soft shadows.
+                        float c1 = hw_fbm(wp * 0.006 + vec2(uTime * 0.01, 0.0));
+                        float c2 = hw_fbm(wp * 0.02 - vec2(0.0, uTime * 0.02));
+                        g = mix(uGroundB, uGroundA, smoothstep(0.3, 0.75, c1 * 0.7 + c2 * 0.3));
+                        hwEmit = 0.35;
+                        hwEmitCol = g;
+                    } else if (uMode > 3.5 && uMode < 4.5) {
+                        // Industrial metal deck with panels and hazard stripes.
+                        vec2 pnl = fract(wp / 20.0);
+                        float seam = smoothstep(0.0, 0.03, pnl.x) * smoothstep(0.0, 0.03, pnl.y);
+                        g = mix(uGroundA, uGroundB, hw_hash(floor(wp / 20.0))) * mix(0.45, 1.0, seam);
+                        float edge = abs(abs(wp.x - uLaneX) - 70.0);
+                        float stripes = step(0.5, fract((wp.x + wp.y) * 0.08));
+                        g = mix(g, mix(vec3(0.95, 0.75, 0.1), vec3(0.08), stripes), step(edge, 4.0));
+                        float light = step(edge, 1.0) * step(0.85, fract(wp.y * 0.02));
+                        hwEmit = light * 1.5;
+                        hwEmitCol = vec3(1.0, 0.3, 0.2);
+                    } else if (uMode > 4.5 && uMode < 5.5) {
+                        // Retro neon grid.
+                        vec2 gl = abs(fract(wp / 30.0 - 0.5) - 0.5) * 30.0;
+                        float line = smoothstep(1.2, 0.0, min(gl.x, gl.y));
+                        g = uGroundA;
+                        hwEmit = line * 1.4;
+                        hwEmitCol = mix(uField, uWater, 0.5 + 0.5 * sin(wp.y * 0.002 + uTime * 0.2));
+                    } else if (uMode > 5.5) {
+                        // Deep space void with nebula tints.
+                        float neb = hw_fbm(wp * 0.0015);
+                        g = mix(uGroundA, uGroundB, neb) * 0.4;
+                        float star = step(0.997, hw_hash(floor(wp * 0.5)));
+                        hwEmit = star * 2.0 + neb * 0.2;
+                        hwEmitCol = mix(vec3(1.0), uField, neb);
                     }
+
                     // Drifting cloud shadows.
                     float hwCs = hw_fbm(wp * 0.0016 + uWindDir * uTime * 0.012);
                     g *= 1.0 - uCloudShadow * smoothstep(0.45, 0.72, hwCs) * 0.4;
@@ -560,6 +627,16 @@
                         hwPuddle = uWet * smoothstep(0.5, 0.6, hw_fbm(wp * 0.018 + 7.0)) * (1.0 - hwWater);
                         g *= mix(1.0, 0.6, uWet);
                         g = mix(g, g * 0.3, hwPuddle);
+                    }
+                    if (uRiver > 0.5) {
+                        float d = abs(wp.x - hwRiverX(wp.y));
+                        float bank = smoothstep(uRiverW + 16.0, uRiverW + 3.0, d);
+                        hwWater = smoothstep(uRiverW, uRiverW - 4.0, d);
+                        g = mix(g, uBank, bank);
+                        float ripple = hw_noise(vec2(wp.x * 0.25, wp.y * 0.08 - uTime * 1.2));
+                        vec3 wc = uWater * (0.82 + 0.25 * ripple);
+                        wc = mix(wc * 0.8, wc, smoothstep(0.0, uRiverW, d));
+                        g = mix(g, wc, hwWater);
                     }
                     // Volcanic ground: cracked crust with glowing veins.
                     if (uLava > 0.0) {
@@ -598,6 +675,7 @@
                         float gh = hw_hash(floor(wp * 1.6) + floor(hwV.xz * 26.0));
                         totalEmissiveRadiance += vec3(1.0, 0.98, 0.92) * step(0.9968, gh) * uSnowGlint * hwNear * 1.6;
                     }
+                    totalEmissiveRadiance += hwEmitCol * hwEmit;
                     if (uLava > 0.0) {
                         float pulse = 0.65 + 0.35 * sin(uTime * 1.7 + hw_hash(floor(wp * 0.045)) * 6.28);
                         totalEmissiveRadiance += vec3(1.0, 0.33, 0.06) * hwLava * uLava * pulse * 1.8;
@@ -619,7 +697,7 @@
         clouds: [],
         time: 0
     };
-    let scene, renderer, sky, sun, hemi, ground, groundUniforms, horizonGroup, solidMat, glowMat, cloudMat;
+    let scene, renderer, sky, sun, hemi, ground, groundUniforms, horizonGroup, solidMat, glowMat, cloudMat, cityMat, cityUniforms;
     const tmpMatrix = new THREE.Matrix4();
     const tmpQuat = new THREE.Quaternion();
     const tmpEuler = new THREE.Euler();
@@ -667,7 +745,8 @@
             uTime: { value: 0 }, uRiver: { value: 1 }, uRiverW: { value: 22 }, uFields: { value: 1 },
             uDunes: { value: 0 }, uWaterGlow: { value: 0 }, uWaterRough: { value: 0.2 }, uValley: { value: VALLEY_HALF },
             uWet: { value: 0 }, uSnowGlint: { value: 0 }, uSandFlow: { value: 0 }, uLava: { value: 0 }, uCloudShadow: { value: 0.6 },
-            uWindDir: { value: new THREE.Vector2(1, 0.3) }, uSkyRefl: { value: new THREE.Color(0x9fb8cc) }
+            uWindDir: { value: new THREE.Vector2(1, 0.3) }, uSkyRefl: { value: new THREE.Color(0x9fb8cc) },
+            uMode: { value: 0 }, uLaneX: { value: 0 }, uNight: { value: 0 }
         };
         ground = new THREE.Mesh(new THREE.PlaneGeometry(4200, 4200, 1, 1), makeGroundMaterial(groundUniforms));
         ground.rotation.x = -Math.PI / 2;
@@ -676,6 +755,28 @@
 
         solidMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.92, metalness: 0 });
         glowMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+        // Buildings: vertex-coloured walls with procedural lit windows on vertical faces.
+        cityUniforms = { uNight: { value: 0 }, uWindow: { value: new THREE.Color(0xffd890) } };
+        cityMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.6, metalness: 0.15 });
+        cityMat.onBeforeCompile = (shader) => {
+            Object.assign(shader.uniforms, cityUniforms);
+            shader.vertexShader = shader.vertexShader
+                .replace("#include <common>", "#include <common>\nvarying vec3 vCityW;")
+                .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCityW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+            shader.fragmentShader = shader.fragmentShader
+                .replace("#include <common>", "#include <common>\nvarying vec3 vCityW; uniform float uNight; uniform vec3 uWindow;\nfloat ch(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }")
+                .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+                    vec3 cn = normalize(cross(dFdx(vCityW), dFdy(vCityW)));
+                    if (abs(cn.y) < 0.3 && vCityW.y > 4.0) {
+                        float u = abs(cn.x) > 0.5 ? vCityW.z : vCityW.x;
+                        vec2 wc = vec2(u / 4.0, vCityW.y / 4.2);
+                        vec2 wf = fract(wc);
+                        float win = step(0.18, wf.x) * step(wf.x, 0.82) * step(0.25, wf.y) * step(wf.y, 0.8);
+                        float lit = step(0.45 - uNight * 0.25, ch(floor(wc)));
+                        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.35 + vec3(0.06, 0.08, 0.1), win * 0.8);
+                        totalEmissiveRadiance += uWindow * win * lit * (0.08 + uNight * 0.9);
+                    }`);
+        };
         cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x777777, flatShading: true, transparent: true, opacity: 0.95 });
 
         horizonGroup = new THREE.Group();
@@ -690,6 +791,7 @@
             c.material.dispose();
         }
         const pal = W.pal;
+        if (W.decor && W.decor.horizon === "skyline") { buildSkyline(); return; }
         const layers = [
             { radius: 1380, minH: 70, maxH: 230, mix: 0.62, seed: 3 },
             { radius: 1220, minH: 40, maxH: 150, mix: 0.45, seed: 7 }
@@ -715,6 +817,36 @@
             for (let i = 1; i < positions.length; i += 3) {
                 const t = THREE.MathUtils.clamp((positions[i] + 20) / 200, 0, 1);
                 const col = bottom.clone().lerp(colorTop, 0.35 + t * 0.65);
+                colors.push(col.r, col.g, col.b);
+            }
+            g.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+            const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, side: THREE.DoubleSide, depthWrite: false }));
+            m.renderOrder = -5;
+            m.frustumCulled = false;
+            horizonGroup.add(m);
+        });
+    }
+
+    function buildSkyline() {
+        const pal = W.pal;
+        [{ radius: 1380, mix: 0.6, seed: 5 }, { radius: 1200, mix: 0.42, seed: 9 }].forEach((layer) => {
+            const positions = [];
+            const segs = 220;
+            for (let i = 0; i < segs; i++) {
+                const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+                const r = hash2(i, layer.seed, 3);
+                const h = 30 + Math.pow(r, 3) * 260 + vnoise(i * 0.1, 0, layer.seed) * 60;
+                const x0 = Math.cos(a0) * layer.radius, z0 = Math.sin(a0) * layer.radius;
+                const x1 = Math.cos(a1) * layer.radius, z1 = Math.sin(a1) * layer.radius;
+                positions.push(x0, -20, z0, x1, -20, z1, x1, h, z1, x0, -20, z0, x1, h, z1, x0, h, z0);
+            }
+            const g = new THREE.BufferGeometry();
+            g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+            const colorTop = C(pal.rock).lerp(C(pal.horizon), layer.mix);
+            const colors = [];
+            for (let i = 1; i < positions.length; i += 3) {
+                const t = THREE.MathUtils.clamp((positions[i] + 20) / 280, 0, 1);
+                const col = C(pal.horizon).lerp(colorTop, 0.45 + t * 0.55);
                 colors.push(col.r, col.g, col.b);
             }
             g.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
@@ -765,9 +897,12 @@
 
     function applyTheme(themeId) {
         if (!W.ready) return;
-        const pal = PALETTES[themeId] || PALETTES.emerald_plains;
-        const decor = DECOR[themeId] || DECOR.emerald_plains;
+        const pal = PALETTES[themeId] || EXT.palettes[themeId] || PALETTES.emerald_plains;
+        const decor = DECOR[themeId] || EXT.decor[themeId] || DECOR.emerald_plains;
         const changed = W.themeId !== themeId;
+        if (changed && W.kindDef && W.kindDef.dispose) W.kindDef.dispose();
+        W.kind = decor.kind || "valley";
+        W.kindDef = EXT.kinds[W.kind] || null;
         W.themeId = themeId;
         W.pal = pal;
         W.decor = decor;
@@ -804,13 +939,26 @@
         groundUniforms.uDunes.value = decor.dunes || 0;
         groundUniforms.uWaterGlow.value = decor.river === "lava" ? 1.1 : decor.river === "glow" ? 0.7 : 0;
         groundUniforms.uWaterRough.value = decor.river === "ice" ? 0.35 : decor.river === "lava" ? 0.8 : 0.12;
+        const groundModes = { natural: 0, city: 1, wood: 2, clouds: 3, metal: 4, grid: 5, space: 6 };
+        groundUniforms.uMode.value = groundModes[decor.ground || "natural"] || 0;
+        groundUniforms.uNight.value = decor.night || 0;
+        cityUniforms.uNight.value = decor.night || 0;
+        if (decor.windowColor) cityUniforms.uWindow.value.setHex(decor.windowColor);
+        const enclosed = !!(W.kindDef && W.kindDef.enclosed);
+        W.clouds.forEach((c) => { c.mesh.visible = !enclosed; });
+        sun.castShadow = !(W.kindDef && W.kindDef.noSunShadow);
 
         if (changed || !W.templates) {
             W.templates = buildTemplates(pal, decor);
+            if (W.kindDef && W.kindDef.buildTemplates) Object.assign(W.templates, W.kindDef.buildTemplates(pal, decor, HELPERS));
+            const kit = decor.kit && EXT.kits[decor.kit];
+            if (kit && kit.buildTemplates) Object.assign(W.templates, kit.buildTemplates(pal, decor, HELPERS));
             buildHorizon();
             buildClouds();
             clearTiles();
         }
+        if (W.kindDef && W.kindDef.enclosed) W.clouds.forEach((c) => { c.mesh.visible = false; });
+        horizonGroup.visible = !(W.kindDef && W.kindDef.horizon === "none");
     }
 
     function clearTiles() {
@@ -829,6 +977,24 @@
         return false;
     }
 
+    function finishTile(tx, tz, builders, colliders) {
+        const meshes = [];
+        const add = (builder, mat, cast, receive) => {
+            const geom = builder && builder.build();
+            if (!geom) return;
+            const m = new THREE.Mesh(geom, mat);
+            m.castShadow = cast;
+            m.receiveShadow = receive;
+            scene.add(m);
+            meshes.push(m);
+        };
+        add(builders.solid, solidMat, true, true);
+        add(builders.ceil, solidMat, false, true);
+        add(builders.city, cityMat, true, true);
+        add(builders.glow, glowMat, false, false);
+        return { tx, tz, meshes, colliders };
+    }
+
     function buildTile(tx, tz) {
         const T = W.templates, decor = W.decor;
         const rnd = mulberry32(Math.floor(hash2(tx, tz, 71) * 4294967295));
@@ -844,11 +1010,24 @@
             tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
             builder.add(template, tmpMatrix, tint);
         };
+        if (W.kindDef && W.kindDef.buildTile) {
+            const builders = { solid, glow, ceil: new Builder(), city: new Builder() };
+            const placeFull = (template, x, y, z, sx, sy, sz, rotY = 0, builder = solid, tint = 1, rotX = 0, rotZ = 0) => {
+                tmpEuler.set(rotX, rotY, rotZ);
+                tmpQuat.setFromEuler(tmpEuler);
+                tmpScale.set(sx, sy, sz);
+                tmpPos.set(x, y, z);
+                tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
+                builder.add(template, tmpMatrix, tint);
+            };
+            W.kindDef.buildTile({ tx, tz, x0, z0, TILE, T, decor, pal: W.pal, rnd, place, placeFull, builders, colliders, inClearing, lane, H: HELPERS });
+            return finishTile(tx, tz, builders, colliders);
+        }
         const nearRiver = (x, z, pad) => decor.river !== "none" && Math.abs(x - riverX(z)) < (decor.riverWidth || 22) + pad;
 
         // Mountains / mesas outside the valley
         const outer = Math.max(Math.abs(x0), Math.abs(x0 + TILE));
-        if (outer > VALLEY_HALF) {
+        if (outer > VALLEY_HALF && !decor.noMountains) {
             const count = 2 + Math.floor(rnd() * 3);
             for (let i = 0; i < count; i++) {
                 const x = x0 + rnd() * TILE, z = z0 + rnd() * TILE;
@@ -923,22 +1102,20 @@
             });
         }
 
-        const meshes = [];
-        const sg = solid.build();
-        if (sg) {
-            const m = new THREE.Mesh(sg, solidMat);
-            m.castShadow = true;
-            m.receiveShadow = true;
-            scene.add(m);
-            meshes.push(m);
+        const kit = decor.kit && EXT.kits[decor.kit];
+        const builders = { solid, glow, ceil: new Builder(), city: new Builder() };
+        if (kit && kit.buildTile) {
+            const placeFull = (template, x, y, z, sx, sy, sz, rotY = 0, builder = solid, tint = 1, rotX = 0, rotZ = 0) => {
+                tmpEuler.set(rotX, rotY, rotZ);
+                tmpQuat.setFromEuler(tmpEuler);
+                tmpScale.set(sx, sy, sz);
+                tmpPos.set(x, y, z);
+                tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
+                builder.add(template, tmpMatrix, tint);
+            };
+            kit.buildTile({ tx, tz, x0, z0, TILE, T, decor, pal: W.pal, rnd, place, placeFull, builders, colliders, inClearing, lane, nearRiver, H: HELPERS });
         }
-        const gg = glow.build();
-        if (gg) {
-            const m = new THREE.Mesh(gg, glowMat);
-            scene.add(m);
-            meshes.push(m);
-        }
-        return { tx, tz, meshes, colliders };
+        return finishTile(tx, tz, builders, colliders);
     }
 
     function streamTiles(focus, budget) {
@@ -971,6 +1148,8 @@
         groundUniforms.uTime.value = W.time;
         horizonGroup.position.set(cam.position.x, 0, cam.position.z);
         ground.position.set(Math.round(focus.x / 60) * 60, 0, Math.round(focus.z / 60) * 60);
+        groundUniforms.uLaneX.value = lane(focus.z).x;
+        if (W.kindDef && W.kindDef.update) W.kindDef.update(delta, focus, cam, W.time);
 
         sun.position.copy(focus).addScaledVector(W.sunDir, 420);
         sun.target.position.copy(focus);
@@ -1201,22 +1380,55 @@
         sky.material.uniforms.uCloudCover.value = fx.cloudCover ?? 0.25;
     }
 
+    // Signed horizontal clearance from pos to collider c (negative = inside), or Infinity if not overlapping in height.
+    function colliderClearance(c, pos, pad = 0) {
+        if (c.type === "cyl") {
+            if (pos.y < c.y0 - pad || pos.y > c.y1 + pad) return Infinity;
+            return Math.hypot(pos.x - c.x, pos.z - c.z) - c.r;
+        }
+        if (c.type === "box") {
+            if (pos.y < c.y0 - pad || pos.y > c.y1 + pad) return Infinity;
+            const dx = Math.abs(pos.x - c.x) - c.hw, dz = Math.abs(pos.z - c.z) - c.hd;
+            return Math.max(dx, dz);
+        }
+        if (c.type === "icone") {
+            // Hanging cone (stalactite): radius r at y1, tip at y0.
+            if (pos.y < c.y0 - pad || pos.y > c.y1) return Infinity;
+            const k = (pos.y - c.y0) / Math.max(1, c.y1 - c.y0);
+            return Math.hypot(pos.x - c.x, pos.z - c.z) - c.r * Math.max(0, k);
+        }
+        if (pos.y > c.h + pad) return Infinity;
+        const d = Math.hypot(pos.x - c.x, pos.z - c.z);
+        const allowed = c.type === "mesa" ? c.r : c.r * Math.max(0, 1 - pos.y / c.h);
+        return d - allowed;
+    }
+
     function checkCollision(pos) {
         if (!W.ready) return null;
+        if (W.kindDef && W.kindDef.enclosed) {
+            const L = lane(pos.z);
+            if (Math.abs(pos.x - L.x) > L.halfWidth) return W.kindDef.wallLabel || "CHOQUE CON LA PARED";
+            if (pos.y > L.ceiling) return W.kindDef.ceilingLabel || "CHOQUE CON EL TECHO";
+        }
         const ptx = Math.floor(pos.x / TILE), ptz = Math.floor(pos.z / TILE);
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const tile = W.tiles.get(`${ptx + dx},${ptz + dz}`);
                 if (!tile) continue;
                 for (const c of tile.colliders) {
-                    if (pos.y > c.h) continue;
-                    const d = Math.hypot(pos.x - c.x, pos.z - c.z);
-                    const allowed = c.type === "mesa" ? c.r : c.r * (1 - pos.y / c.h);
-                    if (d < allowed) return c.type === "mesa" ? "COLISION CON MESETA" : "COLISION CON MONTAÑA";
+                    if (colliderClearance(c, pos) < 0) {
+                        return c.label || (c.type === "mesa" ? "COLISION CON MESETA" : "COLISION CON MONTAÑA");
+                    }
                 }
             }
         }
         return null;
+    }
+
+    // Flight lane for the current world kind: centre x, usable half width and ceiling.
+    function lane(z) {
+        if (W.kindDef && W.kindDef.lane) return W.kindDef.lane(z, W.decor);
+        return { x: 0, halfWidth: VALLEY_HALF - 20, ceiling: 150, enclosed: false };
     }
 
     // Smallest horizontal clearance between pos and any nearby terrain collider
@@ -1224,16 +1436,17 @@
     function probeClearance(pos) {
         if (!W.ready) return Infinity;
         let best = Infinity;
+        if (W.kindDef && W.kindDef.enclosed) {
+            const L = lane(pos.z);
+            best = Math.min(L.halfWidth - Math.abs(pos.x - L.x), L.ceiling - pos.y);
+        }
         const ptx = Math.floor(pos.x / TILE), ptz = Math.floor(pos.z / TILE);
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const tile = W.tiles.get(`${ptx + dx},${ptz + dz}`);
                 if (!tile) continue;
                 for (const c of tile.colliders) {
-                    if (pos.y > c.h + 6) continue;
-                    const d = Math.hypot(pos.x - c.x, pos.z - c.z);
-                    const allowed = c.type === "mesa" ? c.r : c.r * Math.max(0, 1 - pos.y / c.h);
-                    best = Math.min(best, d - allowed);
+                    best = Math.min(best, colliderClearance(c, pos, 6));
                 }
             }
         }
@@ -1306,5 +1519,7 @@
         return W.pal;
     }
 
-    window.WorldGfx = { init, applyTheme, update, setDetail, setWeatherFog, setFlash, setWeatherSky, setGroundFx, spawnLightning, renderOverlay, checkCollision, probeClearance, addClearing, reset, riverX, getPalette, VALLEY_HALF };
+    const HELPERS = { tpl, combine, shade, Builder, vnoise, hash2, mulberry32, riverX, C, TILE, VALLEY_HALF, scene: () => scene };
+
+    window.WorldGfx = { init, applyTheme, update, setDetail, setWeatherFog, setFlash, setWeatherSky, setGroundFx, spawnLightning, renderOverlay, registerWorld, registerKind, registerKit, lane, __decor: () => W.decor, getKind: () => W.kind, isEnclosed: () => !!(W.kindDef && W.kindDef.enclosed), checkCollision, probeClearance, addClearing, reset, riverX, getPalette, VALLEY_HALF };
 })();

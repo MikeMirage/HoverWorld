@@ -449,7 +449,7 @@
     }
 
     window.GameAudio = {
-        unlock, startLoops, updateFlight, setAmbience, play, setWorld, startMusic, stopMusic, setIntensity,
+        unlock, startLoops, updateFlight, setAmbience, play, setWorld, registerWorld(themeId, mood) { WORLD_MOODS[themeId] = mood; }, startMusic, stopMusic, setIntensity,
         toggleMute, setMuted, setVolume, get prefs() { return prefs; }
     };
 })();

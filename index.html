@@ -1674,6 +1674,7 @@
             box-shadow: none;
         }
 
+        #cheats-screen { z-index: 150; background: rgba(4, 12, 22, 0.78); backdrop-filter: blur(8px); }
         #pause-screen {
             z-index: 140;
             background: rgba(4, 12, 22, 0.72);
@@ -2523,10 +2524,13 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/world-visuals.js"></script>
+    <script src="js/world-kinds.js"></script>
     <script src="js/post-fx.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/combat.js"></script>
     <script src="js/weather.js"></script>
+    <script src="js/bosses.js"></script>
+    <script src="js/worlds-extra.js"></script>
 </head>
 <body class="menu-view">
         <div id="ui-layer">
@@ -2636,6 +2640,7 @@
                 <div class="meta-pill" id="start-discovery-pill">Discovery: 0</div>
                 <div class="meta-pill" id="start-parts-pill">Parts: 0</div>
                 <button type="button" class="meta-pill audio-pill" id="menu-audio-btn" aria-label="Sonido">🔊</button>
+                <button type="button" class="meta-pill audio-pill" id="menu-cheats-btn" aria-label="Trucos">🛠</button>
             </div>
         </div>
         <div class="start-hero">
@@ -2766,6 +2771,24 @@
             <button id="next-level-btn" class="card-btn primary" hidden>SIGUIENTE NIVEL ▶</button>
             <button id="restart-btn" class="card-btn primary">REINTENTAR</button>
             <button id="menu-btn" class="card-btn secondary">MAPA DE NIVELES</button>
+        </div>
+    </div>
+
+    <div id="cheats-screen" class="screen hidden">
+        <div class="pause-card">
+            <h2>Trucos</h2>
+            <button type="button" class="card-btn primary" data-cheat="all">DESBLOQUEAR TODO</button>
+            <div class="card-row">
+                <button type="button" class="card-btn secondary" data-cheat="worlds">Todos los mundos</button>
+                <button type="button" class="card-btn secondary" data-cheat="levels">Todos los niveles</button>
+            </div>
+            <div class="card-row">
+                <button type="button" class="card-btn secondary" data-cheat="aircraft">Todos los aviones</button>
+                <button type="button" class="card-btn secondary" data-cheat="upgrades">Mejoras al máximo</button>
+            </div>
+            <button type="button" class="card-btn secondary" data-cheat="money">+5000 créditos · +50 parts</button>
+            <button type="button" class="card-btn secondary" data-cheat="reset">Reiniciar progreso</button>
+            <button type="button" class="card-btn secondary" data-cheat="close">CERRAR</button>
         </div>
     </div>
 
@@ -4010,6 +4033,23 @@
             ]
         };
 
+        // Worlds 11-30 live in js/worlds-extra.js; every world gets its own boss.
+        (window.EXTRA_WORLDS || []).forEach((w) => {
+            LEVEL_THEME_LIBRARY[w.theme] = {
+                id: w.theme, displayName: w.name, skyColor: w.palette.skyTop, groundColor: w.palette.ground,
+                fogNear: w.palette.fogNear, fogFar: w.palette.fogFar, propsLarge: w.challenges.slice(), propsSmall: []
+            };
+            WORLD_PROFILES[w.id] = {
+                id: w.id, displayName: w.name, blurb: w.blurb, themeId: w.theme, boss: w.boss,
+                visualTheme: { skyColor: w.palette.skyTop, fogNear: w.palette.fogNear, fogFar: w.palette.fogFar, groundColor: w.palette.ground, gridOpacity: 0.12 },
+                missionPool: [...new Set(w.levels.flat().map((e) => e.split(":")[0]))],
+                featuredChallenges: w.challenges.slice(),
+                environmentModifiers: { supportFuelCap: w.fuel }
+            };
+            WORLD_LEVELS[w.id] = w.levels;
+        });
+        Object.entries(window.BASE_WORLD_BOSSES || {}).forEach(([id, boss]) => { if (WORLD_PROFILES[id]) WORLD_PROFILES[id].boss = boss; });
+
         function getWorldLevels(world) {
             return WORLD_LEVELS[world.id] || [world.missionPool];
         }
@@ -4035,10 +4075,11 @@
                 const base = MISSION_LIBRARY[id];
                 if (!base) return null;
                 const count = countStr ? parseInt(countStr, 10) : base.requiredCount;
+                const bossDef = base.type === "boss" && window.Bosses && Bosses.DEFS[world.boss || "dreadnought"];
                 return Object.assign({}, base, {
                     requiredCount: count,
-                    title: base.title.replace("{n}", count),
-                    description: base.description.replace("{n}", count)
+                    title: bossDef ? `Jefe: ${bossDef.name}` : base.title.replace("{n}", count),
+                    description: bossDef ? bossDef.intro : base.description.replace("{n}", count)
                 });
             }).filter(Boolean);
         }
@@ -4896,6 +4937,26 @@
             }
         }
 
+        function applyCheat(kind) {
+            const all = kind === "all";
+            if (all || kind === "worlds") saveState.unlockedWorldIds = getWorldIds().slice();
+            if (all || kind === "levels") {
+                getWorldIds().forEach((id) => { getLevelProgress(id).unlocked = getWorldLevels(WORLD_PROFILES[id]).length; });
+            }
+            if (all || kind === "aircraft") saveState.unlockedAircraftIds = getAircraftIds().slice();
+            if (all || kind === "upgrades") Object.keys(UPGRADE_DEFS).forEach((id) => { saveState.upgrades[id] = UPGRADE_DEFS[id].maxLevel; });
+            if (all || kind === "money") { saveState.currencies.credits += 5000; saveState.currencies.parts += 50; }
+            if (kind === "reset") {
+                if (!window.confirm("¿Borrar todo el progreso?")) return;
+                saveState = deepClone(DEFAULT_SAVE_STATE);
+                menuWorldPreviewId = null;
+                menuAircraftPreviewId = null;
+            }
+            saveProgress();
+            refreshMetaUi();
+            GameAudio.play("unlock");
+        }
+
         function returnToHangar() {
             Combat.reset(1);
             placeShipForMenu();
@@ -5095,6 +5156,16 @@
             });
             uiPauseMusicBtn.addEventListener("click", () => { GameAudio.setVolume("music", GameAudio.prefs.music > 0 ? 0 : 0.55); refreshAudioButtons(); });
             uiMenuAudioBtn.addEventListener("click", () => { GameAudio.unlock(); GameAudio.toggleMute(); refreshAudioButtons(); });
+            const cheatsScreen = document.getElementById("cheats-screen");
+            document.getElementById("menu-cheats-btn").addEventListener("click", () => cheatsScreen.classList.remove("hidden"));
+            cheatsScreen.querySelectorAll("[data-cheat]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const kind = btn.dataset.cheat;
+                    if (kind === "close") { cheatsScreen.classList.add("hidden"); return; }
+                    applyCheat(kind);
+                    if (kind !== "reset") showMissionToast("Truco aplicado");
+                });
+            });
             document.addEventListener("pointerdown", () => {
                 GameAudio.unlock();
                 GameAudio.startLoops();
@@ -5760,7 +5831,7 @@
             const zoneProfile = getTerrainZoneProfile(chunkIndex);
 
             const zeppelinSeed = (((chunkIndex * 19) % 100) / 100);
-            if (chunkIndex >= 2 && zeppelinSeed < zoneProfile.zeppelinChance) {
+            if (chunkIndex >= 2 && zeppelinSeed < zoneProfile.zeppelinChance && WorldGfx.getKind() === "valley") {
                 const zepX = (chunkIndex % 2 === 0 ? -1 : 1) * (90 + ((chunkIndex * 23) % 110));
                 const zepY = 96 + ((chunkIndex * 11) % 22);
                 const zepZ = baseZ - 80 - ((chunkIndex * 13) % 110);
@@ -5797,7 +5868,7 @@
             }
 
             if (!isSkidding && !isControlledLanding) {
-                const terrainHit = WorldGfx.checkCollision(playerShip.position);
+                const terrainHit = WorldGfx.checkCollision(playerShip.position) || (WorldGfx.getKind() === "sky" && playerShip.position.y < 5 ? (WorldGfx.__decor().space ? "PERDIDO EN EL VACÍO" : "CAÍDA AL MAR DE NUBES") : null);
                 if (terrainHit) {
                     triggerCriticalCrash(terrainHit, "#ff7a5c");
                     return true;
@@ -5859,7 +5930,8 @@
             uiHudDescent.style.display = "block";
             uiMinimapContainer.style.display = "block";
 
-            playerShip.position.set(0, 100, 0);
+            const startLane = WorldGfx.lane(0);
+            playerShip.position.set(startLane.x, Math.min(100, startLane.ceiling - 30), 0);
             targetRotation.set(0, 0);
             flightState.pitch = 0;
             flightState.yaw = 0;
@@ -6180,6 +6252,8 @@
             const baseZ = -(chunkIndex * chunkDepth) - 260;
             const pickupPos = new THREE.Vector3(((chunkIndex * 41) % 3 - 1) * 54, 30 + ((chunkIndex * 9) % 14), baseZ);
             const deliveryPos = new THREE.Vector3(THREE.MathUtils.clamp(pickupPos.x + (pickupPos.x >= 0 ? -86 : 86), -120, 120), pickupPos.y + 8, baseZ - 170);
+            fitToLane(pickupPos);
+            fitToLane(deliveryPos);
             const pickup = createCargoPickupObject(pickupPos);
             const delivery = createCargoDeliveryObject(deliveryPos);
             delivery.mesh.visible = false;
@@ -6194,7 +6268,7 @@
         function spawnLandingMissionPattern(mission, chunkIndex) {
             if (activeMissionObjects.length > 0) return 0;
             const baseZ = -(chunkIndex * chunkDepth) - 310;
-            const zonePos = new THREE.Vector3((((chunkIndex * 29) % 3) - 1) * 80, 0, baseZ);
+            const zonePos = fitToLane(new THREE.Vector3((((chunkIndex * 29) % 3) - 1) * 80, 0, baseZ), 40);
             const landingZone = createLandingZoneObject(zonePos);
             WorldGfx.addClearing(zonePos.x, zonePos.z, 200);
             scene.add(landingZone.mesh);
@@ -6209,7 +6283,7 @@
                 kind: "missionTarget", missionType: "boss", prefab: "boss", mesh: null, collected: false,
                 active: true, collisionRadius: 0, minimapClass: "mission-truck", rewardFuel: 0, rewardScore: 0
             };
-            Combat.spawnBoss(Math.min(playerShip.position.z - 520, -(chunkIndex * chunkDepth)), bossObject);
+            Combat.spawnBoss(Math.min(playerShip.position.z - 520, -(chunkIndex * chunkDepth)), bossObject, currentWorldProfile.boss);
             worldObjects.push(bossObject);
             activeMissionObjects.push(bossObject);
             return 1;
@@ -6218,7 +6292,7 @@
         function spawnRefuelMissionPattern(mission, chunkIndex) {
             if (activeMissionObjects.length > 0) return 0;
             const baseZ = -(chunkIndex * chunkDepth) - 320;
-            const tankerPos = new THREE.Vector3((((chunkIndex * 17) % 3) - 1) * 68, 52 + ((chunkIndex * 7) % 10), baseZ);
+            const tankerPos = fitToLane(new THREE.Vector3((((chunkIndex * 17) % 3) - 1) * 68, 52 + ((chunkIndex * 7) % 10), baseZ), 40);
             const tanker = createTankerObject(tankerPos);
             scene.add(tanker.mesh);
             worldObjects.push(tanker);
@@ -6233,7 +6307,7 @@
             const lanePattern = [0, -96, 82, -68, 54];
 
             lanePattern.forEach((lane, index) => {
-                const gate = createRaceGateObject(new THREE.Vector3(lane, 34 + (index % 2) * 10, baseZ - index * 120), index);
+                const gate = createRaceGateObject(fitToLane(new THREE.Vector3(lane, 34 + (index % 2) * 10, baseZ - index * 120), 30, 110), index);
                 scene.add(gate.mesh);
                 worldObjects.push(gate);
                 activeMissionObjects.push(gate);
@@ -6257,6 +6331,18 @@
             });
 
             return checkpoints.length;
+        }
+
+        // Squeeze spawn positions into the flyable corridor of caves, cities, interiors...
+        // spread = the lateral range the original layout assumed (scaled down to fit).
+        function fitToLane(pos, margin = 24, spread = 210) {
+            if (!window.WorldGfx || WorldGfx.getKind() === "valley") return pos;
+            const L = WorldGfx.lane(pos.z);
+            const half = Math.max(8, L.halfWidth - margin);
+            const rel = spread >= 1e8 ? pos.x - L.x : pos.x * Math.min(1, half / spread);
+            pos.x = L.x + THREE.MathUtils.clamp(rel, -half, half);
+            if (pos.y > 6) pos.y = THREE.MathUtils.clamp(pos.y, 14, L.ceiling - 18);
+            return pos;
         }
 
         function getPatternPositions(pattern, chunkIndex, remaining) {
@@ -6308,7 +6394,7 @@
                 }
             }
 
-            return positions;
+            return positions.map((p) => fitToLane(p));
         }
 
         function spawnSupportFuelForPattern(mission, positions) {
@@ -6321,6 +6407,7 @@
                 const lateralOffset = index % 2 === 0 ? 22 : -28;
                 const fuelPos = position.clone().add(new THREE.Vector3(lateralOffset, 6, -14));
                 fuelPos.x = THREE.MathUtils.clamp(fuelPos.x, -120, 120);
+                fitToLane(fuelPos, 20, 1e9);
                 const fuel = createFuelObject(fuelPos);
                 scene.add(fuel.mesh);
                 worldObjects.push(fuel);
@@ -6407,7 +6494,7 @@
                 const curve = ((chunk % 4) - 1.5) / 1.5;
                 const laneX = (i) => THREE.MathUtils.clamp(startX + Math.sin(i * 0.45) * 26 * curve, -170, 170);
                 for (let i = 0; i < count; i++) {
-                    const pos = new THREE.Vector3(laneX(i), startY + Math.sin(i * 0.6 + chunk) * 6, baseZ - i * 65);
+                    const pos = fitToLane(new THREE.Vector3(laneX(i), startY + Math.sin(i * 0.6 + chunk) * 6, baseZ - i * 65), 24, 170);
                     const nextX = laneX(i + 1);
                     const yaw = Math.atan2(-(nextX - pos.x), 65);
                     const ringObject = createBoostRingObject(pos, yaw);
