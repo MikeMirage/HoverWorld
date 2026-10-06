@@ -253,6 +253,7 @@
         C.hitFlash = 1;
         shakeIntensity = Math.max(shakeIntensity, 3);
         if (typeof flashScreen === "function") flashScreen("rgba(255,60,40,1)", 0.28);
+        if (typeof haptic === "function") haptic(45);
         GameAudio.play("playerHit");
         if (runStats) runStats.combo = 0;
         if (C.shield <= 0) triggerCriticalCrash(label || "DERRIBADO", "#ff5a4f");
@@ -631,7 +632,7 @@
     }
 
     function spawnSetPiecesAhead(playerChunk, chunkDepth) {
-        if (C.boss) return;
+        if (C.boss || C.noPieces) return;
         for (let chunk = playerChunk + 3; chunk <= playerChunk + 4; chunk++) {
             if (C.pieceChunks.has(chunk) || chunk % 3 !== 0) continue;
             C.pieceChunks.add(chunk);
@@ -1236,6 +1237,7 @@
         setFiring(v) { C.firing = v; },
         setExternalTargets(fn) { C.externalTargets = fn; },
         setQuiet(v) { C.quiet = !!v; },
+        setPiecesEnabled(v) { C.noPieces = !v; },
         setAutoFire(v) { C.autoFire = !!v; },
         get autoFire() { return !!C.autoFire; },
         startDogfight, stopDogfight, setSurvive,

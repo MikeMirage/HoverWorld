@@ -1274,6 +1274,46 @@
             backdrop-filter: blur(6px);
         }
         #start-screen.sheet-open .level-strip-wrap { display: none; }
+
+        #level-intro {
+            position: absolute;
+            left: 50%;
+            top: 30%;
+            transform: translate(-50%, -50%) scale(0.96);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+            z-index: 70;
+            text-align: center;
+            width: min(90vw, 460px);
+        }
+        #level-intro.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .li-kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; color: #eaf6ff; text-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+        .li-title {
+            font-size: clamp(40px, 12vw, 72px);
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: 0.06em;
+            background: linear-gradient(180deg, #ffffff, #ffe36a);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
+        }
+        .li-goals { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+        .li-goals span {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(6, 18, 30, 0.62);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #f2f8ff;
+            font-size: 13px;
+            font-weight: 700;
+            backdrop-filter: blur(6px);
+        }
+        body.menu-view #level-intro { display: none; }
         .ach-head {
             margin: 10px 0 2px;
             font-size: 11px;
@@ -2418,6 +2458,68 @@
             #start-screen .start-loadout span { display: none; }
             #start-screen .hero-badge-label { font-size: 9px; }
         }
+
+        /* ---- Mobile-first HUD & menu (portrait phones) ---- */
+        @media (max-width: 640px) {
+            .hud-top { padding: calc(var(--safe-top) + 8px) calc(var(--safe-right) + 8px) 0 calc(var(--safe-left) + 8px); gap: 8px; }
+            .hud-column { flex: 1; min-width: 0; }
+            .primary-panel { width: auto; padding: 8px 10px; border-radius: 12px; }
+            .primary-panel .metric-label, .primary-panel .support-stats { display: none; }
+            .primary-panel .score-value { font-size: 20px; }
+            .fuel-strip { margin-top: 6px; }
+            .fuel-meta { font-size: 9px; }
+            .shield-meta { margin-top: 5px; margin-bottom: 3px; font-size: 9px; }
+            .mission-panel { width: auto !important; padding: 8px 10px !important; border-radius: 12px; }
+            .mission-header { font-size: 9px !important; margin-bottom: 2px !important; }
+            .mission-title { font-size: 13px !important; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px !important; }
+            .mission-meta { font-size: 10px; margin-bottom: 4px; }
+            #mission-toast { top: calc(var(--safe-top) + 104px); width: min(86vw, 300px); font-size: 11px; padding: 8px 10px; }
+            #combo-meter { top: calc(var(--safe-top) + 150px); }
+            #hint-banner { bottom: auto; top: calc(var(--safe-top) + 150px); font-size: 13px; padding: 10px 12px; }
+            #boss-hud { width: 70vw; top: calc(var(--safe-top) + 100px); }
+            #flight-gauge { bottom: calc(var(--safe-bottom) + 14px); padding: 5px 6px; }
+            #flight-gauge .g-cell:nth-child(3), #flight-gauge .g-cell:nth-child(4) { display: none; }
+            #minimap-container { width: 92px !important; height: 92px !important; left: calc(var(--safe-left) + 10px) !important; bottom: calc(var(--safe-bottom) + 10px) !important; }
+            .fire-btn { width: 84px; height: 84px; right: calc(var(--safe-right) + 14px); bottom: calc(var(--safe-bottom) + 18px); }
+            .hud-icon-btn { width: 40px; height: 40px; right: calc(var(--safe-right) + 14px); bottom: calc(var(--safe-bottom) + 116px); }
+            .stall-warning { font-size: 34px; top: 34%; }
+
+            #start-screen h1 { font-size: clamp(32px, 11.2vw, 60px); letter-spacing: 0.03em; padding-right: 0.15em; }
+            #start-screen .subtitle { font-size: 13px; }
+            #start-screen .start-kicker { display: none; }
+            #start-screen .start-topbar { width: calc(100vw - 20px); }
+            #start-screen .start-loadout { padding: 6px 10px; }
+            #start-screen .start-loadout strong { font-size: 12px; white-space: nowrap; }
+            #start-screen .start-currencies .meta-pill { padding: 4px 8px; font-size: 11px; min-height: 28px; }
+            .level-node { width: 46px; height: 46px; font-size: 17px; }
+            .level-link { width: 8px; }
+            .level-strip { gap: 4px; }
+            #start-screen #start-btn.start-primary-cta { min-width: calc(100vw - 32px); font-size: 21px; }
+            #start-screen .menu-dock { width: 100vw; box-sizing: border-box; padding-left: 8px; padding-right: 8px; }
+            .menu-shortcuts { gap: 6px !important; }
+            .menu-shortcut-btn { min-width: 0 !important; padding-left: 2px !important; padding-right: 2px !important; }
+            .meta-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; }
+            .meta-stat { font-size: 11px !important; padding: 8px 10px !important; }
+            .meta-stat strong { font-size: 14px !important; }
+            .meta-title { font-size: 20px !important; }
+            .meta-copy { font-size: 13px !important; }
+            #start-screen .start-meta-sheet { max-height: 52vh; }
+
+            #game-over-screen { padding: 12px; justify-content: center; }
+            .results-card, .pause-card { padding: 14px; gap: 8px; border-radius: 18px; }
+            .results-card h2, .pause-card h2 { font-size: 19px; letter-spacing: 0.08em; }
+            .results-kicker { font-size: 10px; }
+            .results-stars { font-size: 32px; }
+            .results-score { font-size: 38px; }
+            .results-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+            .results-stat { padding: 6px 8px; }
+            .results-stat span { font-size: 8px; }
+            .results-stat strong { font-size: 14px; }
+            .reward-chip { font-size: 12px; padding: 5px 9px; }
+            .results-unlock { font-size: 12px; padding: 8px 10px; }
+            .results-tip { font-size: 11px; }
+            .card-btn { padding: 12px 14px; font-size: 15px; }
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/world-visuals.js"></script>
@@ -2476,6 +2578,7 @@
         </div>
 
         <div id="stall-warning" class="stall-warning">STALL!</div>
+        <div id="level-intro"><div class="li-kicker" id="li-kicker">Frontier Reach</div><div class="li-title" id="li-title">NIVEL 1</div><div class="li-goals" id="li-goals"></div></div>
         <div id="hint-banner"><span class="hint-icon">💡</span><span id="hint-text"></span></div>
         <div id="combo-meter"><span id="combo-mult">x2</span><span id="combo-label">COMBO</span><div id="combo-bar"><div id="combo-bar-fill"></div></div></div>
         <button type="button" class="fire-btn" id="fire-btn" aria-label="Disparar"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="15" cy="15" r="2.6" fill="currentColor"/><path d="M15 1v7M15 22v7M1 15h7M22 15h7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
@@ -4172,7 +4275,7 @@
                 : world.blurb;
             renderMetaStats(uiMetaWorldStats, [
                 { label: "Dificultad", value: getWorldDifficulty(world) },
-                { label: "Ruta", value: `${world.missionPool.length} misiones` },
+                { label: "Niveles", value: `${Math.min(getLevelProgress(world.id).unlocked, getWorldLevels(world).length)} / ${getWorldLevels(world).length} · ★${getLevelProgress(world.id).stars.reduce((a, b) => a + (b || 0), 0)}/${getWorldLevels(world).length * 3}` },
                 { label: "Clima", value: Weather.describe(world.themeId) || worldTheme?.displayName || "Base" },
                 { label: "Tu récord", value: worldBest ? `${worldBest.toLocaleString("es-ES")} pts` : "—" }
             ]);
@@ -4199,9 +4302,9 @@
             uiStartLoadoutWorld.innerText = world.displayName;
             uiStartShowcaseAircraft.innerText = aircraft.displayName;
             uiStartShowcaseWorld.innerText = world.displayName;
-            uiStartCredits.innerText = `Créditos: ${saveState.currencies.credits}`;
-            uiStartDiscovery.innerText = `Discovery: ${saveState.currencies.discovery}`;
-            uiStartParts.innerText = `Parts: ${saveState.currencies.parts}`;
+            uiStartCredits.innerText = `🪙 ${saveState.currencies.credits.toLocaleString("es-ES")}`;
+            uiStartDiscovery.innerText = `🔷 ${saveState.currencies.discovery}`;
+            uiStartParts.innerText = `⚙️ ${saveState.currencies.parts}`;
             uiStartBestDistance.innerText = `${saveState.records.bestDistance} m`;
             uiStartTotalRuns.innerText = `${saveState.totals.runs}`;
             uiStartWorldsUnlocked.innerText = `${saveState.unlockedWorldIds.length} / ${getWorldIds().length}`;
@@ -4519,6 +4622,20 @@
             });
         }
 
+        // ---------- Level intro card ----------
+        let levelIntroTimer = null;
+        function showLevelIntro() {
+            const el = document.getElementById("level-intro");
+            const levelIndex = getSelectedLevelIndex();
+            const isBoss = missionDefs.some((m) => m.type === "boss");
+            document.getElementById("li-kicker").textContent = `${currentWorldProfile.displayName} · ${Weather.describe(currentWorldProfile.themeId)}`;
+            document.getElementById("li-title").textContent = isBoss ? `NIVEL ${levelIndex + 1} · JEFE` : `NIVEL ${levelIndex + 1}`;
+            document.getElementById("li-goals").innerHTML = missionDefs.map((m, i) => `<span>${i + 1}. ${m.title}</span>`).join("");
+            el.classList.add("visible");
+            clearTimeout(levelIntroTimer);
+            levelIntroTimer = setTimeout(() => el.classList.remove("visible"), 3000);
+        }
+
         // ---------- Takeoff camera intro ----------
         let cameraIntro = 0;
         const CAMERA_INTRO_DURATION = 2.4;
@@ -4718,7 +4835,7 @@
             flightState.pitch = Math.sin(t * 0.9 + 1.2) * 0.05;
             applyFlightTransform();
             const orbit = t * 0.16;
-            const radius = 30;
+            const radius = camera.aspect < 1 ? 30 + (1 - camera.aspect) * 34 : 30;
             const target = playerShip.position.clone().add(new THREE.Vector3(Math.sin(orbit) * radius, 7 + Math.sin(t * 0.3) * 3, Math.cos(orbit) * radius));
             camera.position.lerp(target, Math.min(1, delta * 2));
             camera.lookAt(playerShip.position.clone().add(new THREE.Vector3(0, 2, 0)));
@@ -5054,6 +5171,7 @@
             triggerCrashExplosion(playerShip.position);
             spawnCrashDebris(playerShip.position);
             GameAudio.play("crash");
+            haptic([80, 40, 140]);
             flashScreen("rgba(255,170,90,1)", 0.3);
             playerShip.visible = false;
             shakeIntensity = 10;
@@ -5603,7 +5721,7 @@
             const zoneProfile = getTerrainZoneProfile(chunkIndex);
 
             const zeppelinSeed = (((chunkIndex * 19) % 100) / 100);
-            if (zeppelinSeed < zoneProfile.zeppelinChance) {
+            if (chunkIndex >= 2 && zeppelinSeed < zoneProfile.zeppelinChance) {
                 const zepX = (chunkIndex % 2 === 0 ? -1 : 1) * (90 + ((chunkIndex * 23) % 110));
                 const zepY = 96 + ((chunkIndex * 11) % 22);
                 const zepZ = baseZ - 80 - ((chunkIndex * 13) % 110);
@@ -5658,7 +5776,21 @@
             return false;
         }
 
+        function haptic(pattern) {
+            try { if (navigator.vibrate && window.matchMedia("(pointer: coarse)").matches) navigator.vibrate(pattern); } catch (e) { /* unsupported */ }
+        }
+
+        function requestImmersiveMode() {
+            if (!window.matchMedia("(pointer: coarse)").matches || document.fullscreenElement) return;
+            const el = document.documentElement;
+            const req = el.requestFullscreen || el.webkitRequestFullscreen;
+            if (req) {
+                try { const p = req.call(el, { navigationUI: "hide" }); if (p && p.catch) p.catch(() => {}); } catch (e) { /* not allowed */ }
+            }
+        }
+
         function startGame() {
+            requestImmersiveMode();
             if (menuWorldPreviewId || menuAircraftPreviewId) {
                 menuWorldPreviewId = null;
                 menuAircraftPreviewId = null;
@@ -5721,8 +5853,11 @@
 
             resetWorldObjects();
             lastPlayedLevelIndex = getSelectedLevelIndex();
+            // First level of the first world is a calm tutorial flight without obstacle set pieces.
+            Combat.setPiecesEnabled(!(currentWorldProfile.id === getWorldIds()[0] && lastPlayedLevelIndex === 0));
             Combat.reset(THREE.MathUtils.clamp(9 - currentWorldProfile.environmentModifiers.supportFuelCap, 1, 5) + lastPlayedLevelIndex * 0.4);
             resetMissionState();
+            showLevelIntro();
 
             engineSmokeParticles.forEach(resetParticle);
             groundDustParticles.forEach(resetParticle);
@@ -5820,7 +5955,7 @@
                 Combat.setSurvive(true);
                 missionState.runtime.surviveTime = 0;
             }
-            showMissionToast(`Nueva misión: ${missionState.activeMission.title}`);
+            if (missionState.sequenceIndex > 0) showMissionToast(`Nueva misión: ${missionState.activeMission.title}`);
             if (isPlaying) GameAudio.play("missionStart");
             updateMissionHud();
         }
@@ -5842,6 +5977,7 @@
             showMissionToast(`Misión completada: ${mission.title}`);
             showScorePopup(`+${missionScore}`, "MISIÓN COMPLETADA", null, "#9dff7a", true);
             GameAudio.play("missionComplete");
+            haptic([30, 50, 30]);
             flashScreen("rgba(160,255,140,1)", 0.22);
             const isLastMission = missionState.sequenceIndex >= missionDefs.length - 1;
             if (advance && !isLastMission) {
@@ -7292,6 +7428,7 @@
             const collectLabels = { statuette: "ESTATUILLA", letter: "LETRA", puzzle: "PIEZA", arch: "¡ARCO!", tower: "RASANTE", target_pod: "DIANA" };
             awardStylePoints(collectLabels[object.prefab] || "OBJETIVO", object.rewardScore, object.mesh.position);
             GameAudio.play("pickup", runStats.combo);
+            haptic(15);
             spawnPickupBurst(object.mesh.position, 0xffe36a, 24);
             flashScreen("rgba(255,227,106,1)", 0.14);
             shakeIntensity += 0.4;
@@ -7779,6 +7916,14 @@
         function onPointerMove(event) {
             if (!touchState.active || event.pointerId !== touchState.pointerId) return;
             const dragRadius = getTouchDragRadius(event.pointerType || touchState.pointerType);
+            // Floating stick: if the finger travels past the rim, drag the base along with it.
+            const dx = event.clientX - touchState.startX, dy = event.clientY - touchState.startY;
+            const dist = Math.hypot(dx, dy);
+            if (dist > dragRadius * 1.15) {
+                const excess = (dist - dragRadius * 1.15) / dist;
+                touchState.startX += dx * excess;
+                touchState.startY += dy * excess;
+            }
             touchState.x = THREE.MathUtils.clamp((event.clientX - touchState.startX) / dragRadius, -1, 1);
             touchState.y = THREE.MathUtils.clamp((event.clientY - touchState.startY) / dragRadius, -1, 1);
             setTouchIndicator(true, touchState.startX, touchState.startY);
@@ -7836,9 +7981,15 @@
                 if (keys.d || keys.ArrowRight) yawInput = -1;
 
                 if (touchState.active) {
-                    const deadZone = 0.12;
-                    const touchYaw = Math.abs(touchState.x) > deadZone ? -touchState.x : 0;
-                    const touchPitch = Math.abs(touchState.y) > deadZone ? touchState.y : 0;
+                    // Dead zone plus an expo curve: fine corrections near the centre, full authority at the rim.
+                    const deadZone = 0.1;
+                    const shape = (v) => {
+                        const a = Math.abs(v);
+                        if (a <= deadZone) return 0;
+                        return Math.sign(v) * Math.pow((a - deadZone) / (1 - deadZone), 1.55);
+                    };
+                    const touchYaw = -shape(touchState.x);
+                    const touchPitch = shape(touchState.y);
                     yawInput = Math.abs(touchYaw) > Math.abs(yawInput) ? touchYaw : yawInput;
                     pitchInput = Math.abs(touchPitch) > Math.abs(pitchInput) ? touchPitch : pitchInput;
                 }
