@@ -416,6 +416,9 @@
                 uSunDir: { value: new THREE.Vector3(0, 1, 0) },
                 uStars: { value: 0 },
                 uFlash: { value: 0 },
+                uCloudCover: { value: 0.25 },
+                uBoltDir: { value: new THREE.Vector3(0, 1, 0) },
+                uBoltGlow: { value: 0 },
                 uAurora: { value: 0 },
                 uTime: { value: 0 }
             },
@@ -430,6 +433,7 @@
             fragmentShader: `
                 uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uBottom; uniform vec3 uSunColor; uniform vec3 uSunDir;
                 uniform float uStars; uniform float uAurora; uniform float uTime; uniform float uFlash;
+                uniform float uCloudCover; uniform vec3 uBoltDir; uniform float uBoltGlow;
                 varying vec3 vDir;
                 ${NOISE_GLSL}
                 float hash3(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
@@ -442,8 +446,17 @@
                     col += uSunColor * (pow(sd, 1200.0) * 3.0 + pow(sd, 64.0) * 0.35 + pow(sd, 6.0) * 0.18);
                     // soft high clouds
                     vec2 cp = d.xz / max(h + 0.12, 0.05);
-                    float cl = smoothstep(0.55, 0.85, hw_fbm(cp * 1.4 + vec2(uTime * 0.004, 0.0)));
-                    col = mix(col, mix(uHorizon, vec3(1.0), 0.6), cl * smoothstep(0.02, 0.25, h) * 0.35 * (1.0 - uStars * 0.6));
+                    float cover = mix(0.56, 0.3, uCloudCover);
+                    vec2 drift = vec2(uTime * (0.004 + uCloudCover * 0.02), uTime * 0.003);
+                    float cn = hw_fbm(cp * 1.4 + drift) * 0.75 + hw_fbm(cp * 4.2 - drift * 2.0) * 0.25;
+                    float cl = smoothstep(cover, cover + 0.28, cn);
+                    // Dark heavy undersides when the sky is overcast, soft white wisps otherwise.
+                    vec3 cloudCol = mix(mix(uHorizon, vec3(1.0), 0.6), uHorizon * mix(0.85, 0.42, smoothstep(0.5, 0.8, cn)), uCloudCover);
+                    float cloudA = cl * smoothstep(0.0, 0.2, h) * mix(0.35, 0.92, uCloudCover) * (1.0 - uStars * 0.6);
+                    col = mix(col, cloudCol, cloudA);
+                    // Sheet lightning glowing inside the cloud deck around the strike.
+                    float ba = max(dot(d, normalize(uBoltDir)), 0.0);
+                    col += vec3(0.78, 0.82, 1.0) * uBoltGlow * (pow(ba, 40.0) * 1.6 + pow(ba, 7.0) * 0.45) * (0.35 + cl * 0.9) * smoothstep(-0.05, 0.15, h);
                     if (uStars > 0.0) {
                         vec3 cell = floor(d * 380.0);
                         float s = hash3(cell);
@@ -480,9 +493,24 @@
                     uniform vec3 uWater; uniform vec3 uBank;
                     uniform float uTime; uniform float uRiver; uniform float uRiverW; uniform float uFields; uniform float uDunes;
                     uniform float uWaterGlow; uniform float uWaterRough; uniform float uValley;
+                    uniform float uWet; uniform float uSnowGlint; uniform float uSandFlow; uniform float uLava; uniform float uCloudShadow;
+                    uniform vec2 uWindDir; uniform vec3 uSkyRefl;
+                    float hwPuddle = 0.0;
+                    float hwLava = 0.0;
+
                     ${NOISE_GLSL}
                     float hwRiverX(float z){ return sin(z * 0.0021) * 110.0 + sin(z * 0.0047 + 1.3) * 45.0; }
                     float hwWater = 0.0;
+                    vec2 hw_vor(vec2 p){
+                        vec2 n = floor(p); vec2 f = fract(p); float d1 = 8.0; float d2 = 8.0;
+                        for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+                            vec2 gg = vec2(float(i), float(j));
+                            vec2 o = vec2(hw_hash(n + gg), hw_hash(n + gg + 19.7));
+                            vec2 r = gg + o - f; float dd = dot(r, r);
+                            if (dd < d1) { d2 = d1; d1 = dd; } else if (dd < d2) { d2 = dd; }
+                        }
+                        return vec2(sqrt(d1), sqrt(d2));
+                    }
                 `)
                 .replace("#include <color_fragment>", `#include <color_fragment>
                     vec2 wp = vHwWorld.xz;
@@ -517,13 +545,63 @@
                         wc = mix(wc * 0.8, wc, smoothstep(0.0, uRiverW, d));
                         g = mix(g, wc, hwWater);
                     }
+                    // Drifting cloud shadows.
+                    float hwCs = hw_fbm(wp * 0.0016 + uWindDir * uTime * 0.012);
+                    g *= 1.0 - uCloudShadow * smoothstep(0.45, 0.72, hwCs) * 0.4;
+                    // Wind-blown sand ribbons sliding over the dunes.
+                    if (uSandFlow > 0.0) {
+                        vec2 wd = normalize(uWindDir);
+                        vec2 q = vec2(dot(wp, wd), dot(wp, vec2(-wd.y, wd.x)));
+                        float streak = hw_noise(vec2(q.x * 0.025 - uTime * 2.4, q.y * 0.3)) * hw_noise(vec2(q.x * 0.008 - uTime * 0.7, q.y * 0.05));
+                        g = mix(g, g * 1.22 + vec3(0.06, 0.045, 0.02), smoothstep(0.3, 0.7, streak) * uSandFlow);
+                    }
+                    // Rain: darkened soil and puddles.
+                    if (uWet > 0.0) {
+                        hwPuddle = uWet * smoothstep(0.5, 0.6, hw_fbm(wp * 0.018 + 7.0)) * (1.0 - hwWater);
+                        g *= mix(1.0, 0.6, uWet);
+                        g = mix(g, g * 0.3, hwPuddle);
+                    }
+                    // Volcanic ground: cracked crust with glowing veins.
+                    if (uLava > 0.0) {
+                        vec2 wq = wp + (vec2(hw_noise(wp * 0.018), hw_noise(wp * 0.018 + 5.0)) - 0.5) * 40.0;
+                        vec2 v = hw_vor(wq * 0.035);
+                        vec2 v2 = hw_vor(wq * 0.1 + 3.0);
+                        float crackW = 0.04 + 0.08 * hw_noise(wp * 0.03 + 2.0);
+                        float crack = smoothstep(crackW, 0.0, v.y - v.x) + smoothstep(0.05, 0.0, v2.y - v2.x) * 0.35 * hw_noise(wp * 0.05);
+                        float region = 0.12 + 0.88 * smoothstep(0.38, 0.62, hw_fbm(wp * 0.004 + 11.0));
+                        float nearRiver = uRiver > 0.5 ? smoothstep(uRiverW + 120.0, uRiverW, abs(wp.x - hwRiverX(wp.y))) : 0.0;
+                        hwLava = clamp(crack * region * (0.55 + nearRiver * 0.8), 0.0, 1.0) * (1.0 - hwWater);
+                        g = mix(g, g * 0.4, region * 0.5);
+                    }
                     diffuseColor.rgb *= g;
                 `)
                 .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
                     roughnessFactor = mix(roughnessFactor, uWaterRough, hwWater);
+                    roughnessFactor = mix(roughnessFactor, 0.35, uWet * 0.6);
+                    roughnessFactor = mix(roughnessFactor, 0.06, hwPuddle);
                 `)
                 .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
                     totalEmissiveRadiance += diffuseColor.rgb * hwWater * uWaterGlow;
+                    vec3 hwV = normalize(vViewPosition);
+                    float hwFres = pow(1.0 - clamp(dot(normal, hwV), 0.0, 1.0), 3.0);
+                    float hwNear = smoothstep(260.0, 25.0, length(vViewPosition));
+                    if (uWet > 0.0) {
+                        totalEmissiveRadiance += uSkyRefl * hwPuddle * (0.04 + hwFres * 0.6);
+                        vec2 rp = wp * 0.4;
+                        vec2 rc = floor(rp);
+                        vec2 rf = fract(rp) - 0.5 - (vec2(hw_hash(rc + 3.1), hw_hash(rc + 5.7)) - 0.5) * 0.4;
+                        float rt = fract(uTime * 1.1 + hw_hash(rc));
+                        float ring = smoothstep(0.035, 0.0, abs(length(rf) - rt * 0.45)) * (1.0 - rt);
+                        totalEmissiveRadiance += uSkyRefl * ring * hwPuddle * 0.7 * hwNear;
+                    }
+                    if (uSnowGlint > 0.0) {
+                        float gh = hw_hash(floor(wp * 1.6) + floor(hwV.xz * 26.0));
+                        totalEmissiveRadiance += vec3(1.0, 0.98, 0.92) * step(0.9968, gh) * uSnowGlint * hwNear * 1.6;
+                    }
+                    if (uLava > 0.0) {
+                        float pulse = 0.65 + 0.35 * sin(uTime * 1.7 + hw_hash(floor(wp * 0.045)) * 6.28);
+                        totalEmissiveRadiance += vec3(1.0, 0.33, 0.06) * hwLava * uLava * pulse * 1.8;
+                    }
                 `);
         };
         return mat;
@@ -587,7 +665,9 @@
             uField: { value: new THREE.Color() }, uRockGround: { value: new THREE.Color() },
             uWater: { value: new THREE.Color() }, uBank: { value: new THREE.Color() },
             uTime: { value: 0 }, uRiver: { value: 1 }, uRiverW: { value: 22 }, uFields: { value: 1 },
-            uDunes: { value: 0 }, uWaterGlow: { value: 0 }, uWaterRough: { value: 0.2 }, uValley: { value: VALLEY_HALF }
+            uDunes: { value: 0 }, uWaterGlow: { value: 0 }, uWaterRough: { value: 0.2 }, uValley: { value: VALLEY_HALF },
+            uWet: { value: 0 }, uSnowGlint: { value: 0 }, uSandFlow: { value: 0 }, uLava: { value: 0 }, uCloudShadow: { value: 0.6 },
+            uWindDir: { value: new THREE.Vector2(1, 0.3) }, uSkyRefl: { value: new THREE.Color(0x9fb8cc) }
         };
         ground = new THREE.Mesh(new THREE.PlaneGeometry(4200, 4200, 1, 1), makeGroundMaterial(groundUniforms));
         ground.rotation.x = -Math.PI / 2;
@@ -903,6 +983,7 @@
 
         streamTiles(focus, W.tiles.size === 0 ? 99 : 2);
         updateFlare(cam, delta);
+        updateBolts(delta, cam);
 
         W.clouds.forEach((cloud) => {
             cloud.mesh.position.x += cloud.speed * delta;
@@ -918,54 +999,76 @@
     }
 
 
-    // ---------- lens flare (DOM overlay, occlusion by raycast) ----------
-    const flare = { root: null, parts: [], visibility: 0, target: 0, frame: 0, ray: new THREE.Raycaster() };
+    // ---------- lens flare (WebGL overlay pass with procedural optics) ----------
+    const flare = { scene: null, cam: null, parts: [], visibility: 0, target: 0, frame: 0, ray: new THREE.Raycaster(), strength: 0 };
     const FLARE_PARTS = [
-        { t: 0, size: 320, cls: "core" },
-        { t: 0, size: 620, cls: "streak" },
-        { t: 0.32, size: 46, cls: "ghost g1" },
-        { t: 0.58, size: 22, cls: "ghost g2" },
-        { t: 0.86, size: 90, cls: "ring" },
-        { t: 1.18, size: 34, cls: "ghost g3" },
-        { t: 1.45, size: 150, cls: "ring faint" },
-        { t: 1.75, size: 18, cls: "ghost g1" }
+        { type: 0, t: 0, size: 0.62, color: [1.0, 0.95, 0.85], gain: 1.0 },
+        { type: 3, t: 0, size: 0.05, aspect: 26, color: [0.55, 0.72, 1.0], gain: 0.55 },
+        { type: 1, t: 0.38, size: 0.075, color: [0.55, 0.85, 1.0], gain: 0.22 },
+        { type: 4, t: 0.55, size: 0.03, color: [1.0, 0.65, 0.35], gain: 0.35 },
+        { type: 1, t: 0.78, size: 0.14, color: [0.6, 1.0, 0.75], gain: 0.09 },
+        { type: 2, t: 1.0, size: 0.46, color: [1.0, 1.0, 1.0], gain: 0.12 },
+        { type: 1, t: 1.25, size: 0.055, color: [1.0, 0.55, 0.85], gain: 0.25 },
+        { type: 4, t: 1.5, size: 0.05, color: [0.5, 0.65, 1.0], gain: 0.22 },
+        { type: 1, t: 1.85, size: 0.22, color: [0.55, 0.75, 1.0], gain: 0.055 }
     ];
     function buildFlare() {
-        const style = document.createElement("style");
-        style.textContent = `
-            #lens-flare { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: screen; overflow: hidden; }
-            #lens-flare span { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); will-change: left, top, opacity; }
-            #lens-flare .core { background: radial-gradient(circle, rgba(255,250,235,0.85) 0%, rgba(255,230,180,0.35) 18%, rgba(255,200,140,0.08) 45%, rgba(255,200,140,0) 70%); }
-            #lens-flare .streak { height: 6px !important; border-radius: 6px; background: linear-gradient(90deg, rgba(255,220,180,0) 0%, rgba(255,235,210,0.55) 50%, rgba(255,220,180,0) 100%); }
-            #lens-flare .ghost { background: radial-gradient(circle, rgba(170,220,255,0.28) 0%, rgba(170,220,255,0.12) 60%, rgba(170,220,255,0) 72%); }
-            #lens-flare .ghost.g2 { background: radial-gradient(circle, rgba(255,190,120,0.32) 0%, rgba(255,190,120,0) 70%); }
-            #lens-flare .ghost.g3 { background: radial-gradient(circle, rgba(160,255,200,0.22) 0%, rgba(160,255,200,0) 70%); }
-            #lens-flare .ring { background: radial-gradient(circle, rgba(255,255,255,0) 58%, rgba(200,230,255,0.16) 66%, rgba(255,210,170,0.1) 72%, rgba(255,255,255,0) 78%); }
-            #lens-flare .ring.faint { opacity: 0.6; }
-        `;
-        document.head.appendChild(style);
-        flare.root = document.createElement("div");
-        flare.root.id = "lens-flare";
+        flare.scene = new THREE.Scene();
+        flare.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const geom = new THREE.PlaneGeometry(2, 2);
         FLARE_PARTS.forEach((def) => {
-            const el = document.createElement("span");
-            el.className = def.cls;
-            el.style.width = `${def.size}px`;
-            el.style.height = `${def.size}px`;
-            flare.root.appendChild(el);
-            flare.parts.push({ el, def });
+            const mat = new THREE.ShaderMaterial({
+                uniforms: { uType: { value: def.type }, uColor: { value: new THREE.Vector3(...def.color) }, uIntensity: { value: 0 }, uRot: { value: 0 } },
+                vertexShader: "varying vec2 vP; void main(){ vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+                fragmentShader: `
+                    uniform float uType; uniform vec3 uColor; uniform float uIntensity; uniform float uRot;
+                    varying vec2 vP;
+                    float hexD(vec2 p, float r){ p = abs(p); return max(dot(p, vec2(0.8660254, 0.5)), p.y) - r; }
+                    void main(){
+                        vec2 p = vP; float r = length(p); vec3 c = vec3(0.0);
+                        if (uType < 0.5) {
+                            float ang = atan(p.y, p.x);
+                            float rays = pow(abs(cos(ang * 4.0 + uRot)), 60.0) * 0.7 + pow(abs(cos(ang * 9.0 - uRot * 0.6)), 120.0) * 0.45
+                                       + pow(abs(cos(ang * 23.0 + uRot * 0.3)), 200.0) * 0.25;
+                            float core = exp(-r * r * 40.0) * 1.2 + exp(-r * 5.0) * 0.28;
+                            c = uColor * (core + rays * exp(-r * 2.6) * 0.8);
+                        } else if (uType < 1.5) {
+                            // Aperture ghost: hexagon with chromatic fringe and darker centre.
+                            float dr = hexD(p, 0.80), dg = hexD(p, 0.84), db = hexD(p, 0.88);
+                            vec3 shape = vec3(smoothstep(0.04, -0.03, dr), smoothstep(0.04, -0.03, dg), smoothstep(0.04, -0.03, db));
+                            float fill = 0.35 + 0.65 * smoothstep(0.2, 0.85, r);
+                            c = uColor * shape * fill;
+                        } else if (uType < 2.5) {
+                            float ring = exp(-pow((r - 0.82) / 0.05, 2.0));
+                            vec3 rainbow = 0.5 + 0.5 * cos(6.2831 * (r * 3.0 + vec3(0.0, 0.33, 0.67)));
+                            c = rainbow * ring;
+                        } else if (uType < 3.5) {
+                            c = uColor * exp(-p.y * p.y * 8.0) * exp(-abs(p.x) * 2.4);
+                        } else {
+                            c = uColor * exp(-r * r * 5.0);
+                        }
+                        gl_FragColor = vec4(c * uIntensity, 1.0);
+                    }`,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthTest: false,
+                depthWrite: false
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.frustumCulled = false;
+            flare.scene.add(mesh);
+            flare.parts.push({ mesh, def });
         });
-        const host = document.getElementById("ui-layer") || document.body;
-        host.insertBefore(flare.root, host.firstChild);
     }
 
     const flareTmp = new THREE.Vector3();
     function updateFlare(cam, delta) {
-        if (!flare.root) buildFlare();
+        if (!flare.scene) buildFlare();
         const sunPos = flareTmp.copy(cam.position).addScaledVector(W.sunDir, 1000);
         const ndc = sunPos.clone().project(cam);
-        const onScreen = ndc.z < 1 && Math.abs(ndc.x) < 1.25 && Math.abs(ndc.y) < 1.25;
+        const onScreen = ndc.z < 1 && Math.abs(ndc.x) < 1.2 && Math.abs(ndc.y) < 1.2;
         flare.frame += 1;
-        if (onScreen && flare.frame % 4 === 0) {
+        if (onScreen && flare.frame % 5 === 0) {
             flare.ray.set(cam.position, W.sunDir);
             flare.ray.far = 1600;
             const targets = [];
@@ -973,23 +1076,129 @@
             horizonGroup.children.forEach((m) => targets.push(m));
             W.clouds.forEach((c) => { if (c.mesh.visible) targets.push(c.mesh); });
             const hits = flare.ray.intersectObjects(targets, false);
-            flare.target = hits.length ? (hits[0].object.material === cloudMat || W.clouds.some((c) => c.mesh === hits[0].object) ? 0.25 : 0) : 1;
+            flare.target = !hits.length ? 1 : W.clouds.some((c) => c.mesh === hits[0].object) ? 0.3 : 0;
         } else if (!onScreen) {
             flare.target = 0;
         }
-        const edge = onScreen ? THREE.MathUtils.clamp(1.25 - Math.max(Math.abs(ndc.x), Math.abs(ndc.y)), 0, 0.5) * 2 : 0;
-        flare.visibility += (flare.target * edge - flare.visibility) * Math.min(1, delta * 6);
-        const strength = flare.visibility * (W.pal.stars ? 0.45 : 1) * (W.sunDir.y > 0 ? 1 : 0);
-        flare.root.style.display = strength > 0.01 ? "block" : "none";
-        if (strength <= 0.01) return;
-        const w = window.innerWidth, h = window.innerHeight;
-        const sx = (ndc.x * 0.5 + 0.5) * w, sy = (-ndc.y * 0.5 + 0.5) * h;
-        const cx = w / 2, cy = h / 2;
-        flare.parts.forEach(({ el, def }) => {
-            el.style.left = `${sx + (cx - sx) * def.t}px`;
-            el.style.top = `${sy + (cy - sy) * def.t}px`;
-            el.style.opacity = (def.cls === "core" || def.cls === "streak" ? strength : strength * 0.85).toFixed(3);
+        const edge = onScreen ? THREE.MathUtils.clamp((1.2 - Math.max(Math.abs(ndc.x), Math.abs(ndc.y))) * 2.2, 0, 1) : 0;
+        flare.visibility += (flare.target * edge - flare.visibility) * Math.min(1, delta * 7);
+        const centerBoost = 0.75 + 0.5 * (1 - Math.min(1, Math.hypot(ndc.x, ndc.y)));
+        flare.strength = flare.visibility * centerBoost * (W.pal.stars ? 0.35 : 1) * weatherSun * (W.sunDir.y > 0 ? 1 : 0);
+        const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+        flare.parts.forEach(({ mesh, def }) => {
+            const x = ndc.x * (1 - def.t), y = ndc.y * (1 - def.t);
+            mesh.position.set(x, y, 0);
+            const sy = def.size, sx = def.size * (def.aspect || 1) / aspect;
+            mesh.scale.set(sx, sy, 1);
+            mesh.material.uniforms.uIntensity.value = flare.strength * def.gain;
+            mesh.material.uniforms.uRot.value = (ndc.x + ndc.y) * 0.8;
         });
+    }
+
+    // Overlay pass rendered after the main scene (lens flare).
+    function renderOverlay(r) {
+        if (!flare.scene || flare.strength < 0.005) return;
+        const prev = r.autoClear;
+        r.autoClear = false;
+        r.clearDepth();
+        r.render(flare.scene, flare.cam);
+        r.autoClear = prev;
+    }
+
+    // ---------- lightning bolts (procedural billboard texture) ----------
+    const bolts = [];
+    let boltMaterialTemplate = null;
+    function makeBoltMaterial() {
+        if (!boltMaterialTemplate) {
+            boltMaterialTemplate = new THREE.ShaderMaterial({
+                uniforms: { uSeed: { value: 0 }, uLife: { value: 0 }, uTime: { value: 0 } },
+                vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+                fragmentShader: `
+                    uniform float uSeed; uniform float uLife; uniform float uTime;
+                    varying vec2 vUv;
+                    ${NOISE_GLSL}
+                    float path(float y, float s){ return (hw_fbm(vec2(y * 2.6, s)) - 0.5) * 0.42 + (hw_noise(vec2(y * 18.0, s * 3.1)) - 0.5) * 0.06; }
+                    void main(){
+                        float y = vUv.y; float x = vUv.x - 0.5;
+                        float d = abs(x - path(y, uSeed));
+                        float core = smoothstep(0.011, 0.002, d);
+                        float glow = exp(-d * 38.0) * 0.6 + exp(-d * 9.0) * 0.22;
+                        for (int b = 0; b < 4; b++) {
+                            float fb = float(b);
+                            float start = 0.25 + fb * 0.17 + hw_hash(vec2(uSeed, fb)) * 0.1;
+                            if (y < start) {
+                                float k = start - y;
+                                float dir = (hw_hash(vec2(fb, uSeed + 1.0)) - 0.5) * 1.7;
+                                float bx = path(start, uSeed) + k * dir + (hw_noise(vec2(y * 22.0, fb + uSeed)) - 0.5) * 0.05;
+                                float bd = abs(x - bx);
+                                float fade = smoothstep(0.32, 0.0, k);
+                                core += smoothstep(0.007, 0.001, bd) * fade;
+                                glow += (exp(-bd * 45.0) * 0.4) * fade;
+                            }
+                        }
+                        float flick = uLife * (0.7 + 0.3 * step(0.5, fract(uTime * 23.0 + uSeed)));
+                        float ends = smoothstep(0.0, 0.03, y) * smoothstep(1.0, 0.82, y);
+                        vec3 col = vec3(0.92, 0.95, 1.0) * core * 2.2 + vec3(0.55, 0.62, 1.0) * glow;
+                        gl_FragColor = vec4(col * flick * ends, 1.0);
+                    }`,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                fog: false
+            });
+        }
+        return boltMaterialTemplate.clone();
+    }
+
+    function spawnLightning(position, height) {
+        let bolt = bolts.find((b) => b.life <= 0);
+        if (!bolt) {
+            const geom = new THREE.PlaneGeometry(1, 1);
+            geom.translate(0, 0.5, 0);
+            const mesh = new THREE.Mesh(geom, makeBoltMaterial());
+            mesh.frustumCulled = false;
+            mesh.renderOrder = 6;
+            scene.add(mesh);
+            bolt = { mesh, life: 0 };
+            bolts.push(bolt);
+        }
+        bolt.life = 0.42;
+        bolt.mesh.visible = true;
+        bolt.mesh.position.copy(position);
+        bolt.mesh.scale.set(height * 0.55, height, 1);
+        bolt.mesh.material.uniforms.uSeed.value = Math.random() * 100;
+        W.boltDir = position.clone().add(new THREE.Vector3(0, height * 0.9, 0));
+        W.boltGlow = 1.4;
+    }
+
+    function updateBolts(delta, cam) {
+        bolts.forEach((b) => {
+            if (b.life <= 0) { b.mesh.visible = false; return; }
+            b.life -= delta;
+            b.mesh.rotation.y = Math.atan2(cam.position.x - b.mesh.position.x, cam.position.z - b.mesh.position.z);
+            const u = b.mesh.material.uniforms;
+            u.uLife.value = Math.max(0, Math.min(1, b.life / 0.12));
+            u.uTime.value = W.time;
+        });
+        if (W.boltGlow > 0 && W.boltDir) {
+            W.boltGlow = Math.max(0, W.boltGlow - delta * 3.5);
+            sky.material.uniforms.uBoltDir.value.copy(W.boltDir).sub(cam.position).normalize();
+        }
+        sky.material.uniforms.uBoltGlow.value = W.boltGlow || 0;
+    }
+
+    // Weather hooks for ground/sky shading.
+    function setGroundFx(fx) {
+        if (!W.ready) return;
+        const u = groundUniforms;
+        u.uWet.value = fx.wet || 0;
+        u.uSnowGlint.value = fx.snowGlint || 0;
+        u.uSandFlow.value = fx.sandFlow || 0;
+        u.uLava.value = fx.lava || 0;
+        u.uCloudShadow.value = fx.cloudShadow ?? 0.6;
+        if (fx.wind) u.uWindDir.value.set(fx.wind[0], fx.wind[1]);
+        u.uSkyRefl.value.copy(sky.material.uniforms.uHorizon.value).lerp(new THREE.Color(0xffffff), 0.15);
+        sky.material.uniforms.uCloudCover.value = fx.cloudCover ?? 0.25;
     }
 
     function checkCollision(pos) {
@@ -1097,5 +1306,5 @@
         return W.pal;
     }
 
-    window.WorldGfx = { init, applyTheme, update, setDetail, setWeatherFog, setFlash, setWeatherSky, checkCollision, probeClearance, addClearing, reset, riverX, getPalette, VALLEY_HALF };
+    window.WorldGfx = { init, applyTheme, update, setDetail, setWeatherFog, setFlash, setWeatherSky, setGroundFx, spawnLightning, renderOverlay, checkCollision, probeClearance, addClearing, reset, riverX, getPalette, VALLEY_HALF };
 })();

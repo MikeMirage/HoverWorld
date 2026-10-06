@@ -3,72 +3,65 @@
 // pollen, spores, fireflies), volumetric mist layers, lightning storms, lava
 // geysers, dust devils and bird flocks. Everything follows the camera.
 (function () {
+    // ground: shader effects on the terrain (cloudShadow, wet puddles, snowGlint, sandFlow, lava cracks)
     const WEATHER = {
         emerald_plains: {
-            sun: 1,
-            name: "Día soleado", icon: "☀️",
-            layers: [{ kind: "points", preset: "pollen" }],
+            sun: 1, name: "Día soleado", icon: "☀️", layers: [],
+            ground: { cloudShadow: 0.8, cloudCover: 0.3, wind: [1, 0.3] },
             birds: true, fog: 1, wind: 0.15, gust: 0
         },
         ember_badlands: {
-            sky: { top: 0xc8875a, horizon: 0xeab98a, amount: 0.45 },
-            sun: 0.8,
-            name: "Calima", icon: "🌫️",
+            sky: { top: 0xc8875a, horizon: 0xeab98a, amount: 0.45 }, sun: 0.8, name: "Calima", icon: "🌫️",
             layers: [{ kind: "points", preset: "dust" }],
-            dustDevils: true, mist: { color: 0xe8b07a, opacity: 0.18, heights: [8, 22] }, fog: 0.82, wind: 0.5, gust: 4
+            ground: { cloudShadow: 0.3, sandFlow: 0.5, cloudCover: 0.15, wind: [1, 0.25] },
+            dustDevils: true, mist: { color: 0xe8b07a, opacity: 0.14, heights: [10] }, fog: 0.82, wind: 0.5, gust: 4
         },
         frost_tundra: {
-            sky: { top: 0x9aaabc, horizon: 0xe4eaf0, amount: 0.55 },
-            sun: 0.65,
-            name: "Nevada", icon: "❄️",
-            layers: [{ kind: "points", preset: "snow" }, { kind: "points", preset: "snowFine" }],
-            mist: { color: 0xf2f6fa, opacity: 0.22, heights: [6, 18] }, fog: 0.72, wind: 0.6, gust: 3
+            sky: { top: 0x9aaabc, horizon: 0xe4eaf0, amount: 0.55 }, sun: 0.65, name: "Nevada", icon: "❄️",
+            layers: [{ kind: "points", preset: "snow" }],
+            ground: { cloudShadow: 0.35, snowGlint: 1, cloudCover: 0.6, wind: [1, 0.4] },
+            mist: { color: 0xf2f6fa, opacity: 0.2, heights: [8] }, fog: 0.72, wind: 0.6, gust: 3
         },
         neon_coast: {
-            sky: { top: 0x7c9cb4, horizon: 0xc8dce6, amount: 0.45 },
-            sun: 0.55,
-            name: "Lluvia ligera", icon: "🌦️",
+            sky: { top: 0x7c9cb4, horizon: 0xc8dce6, amount: 0.45 }, sun: 0.55, name: "Lluvia ligera", icon: "🌦️",
             layers: [{ kind: "rain", preset: "drizzle" }],
-            birds: true, mist: { color: 0xd8f2f8, opacity: 0.16, heights: [5, 14] }, fog: 0.86, wind: 0.3, gust: 1.5, rain: 0.35
+            ground: { cloudShadow: 0.4, wet: 0.7, cloudCover: 0.6, wind: [0.6, 1] },
+            birds: true, mist: { color: 0xd8f2f8, opacity: 0.14, heights: [6] }, fog: 0.86, wind: 0.3, gust: 1.5, rain: 0.35
         },
         obsidian_ridge: {
-            sky: { top: 0x2a0f10, horizon: 0x8a3a2a, amount: 0.45 },
-            sun: 0.8,
-            name: "Erupción volcánica", icon: "🌋",
-            layers: [{ kind: "points", preset: "ash" }, { kind: "points", preset: "embers" }],
-            geysers: true, mist: { color: 0x5a3030, opacity: 0.2, heights: [10, 28] }, fog: 0.85, wind: 0.2, gust: 1, lava: 1
+            sky: { top: 0x2a0f10, horizon: 0x8a3a2a, amount: 0.45 }, sun: 0.8, name: "Erupción volcánica", icon: "🌋",
+            layers: [{ kind: "points", preset: "embers" }],
+            ground: { cloudShadow: 0.5, lava: 1, cloudCover: 0.55, wind: [0.4, 1] },
+            geysers: true, mist: { color: 0x5a3030, opacity: 0.18, heights: [14] }, fog: 0.85, wind: 0.2, gust: 1, lava: 1
         },
         golden_dunes: {
-            sky: { top: 0xc9a06a, horizon: 0xe8c58e, amount: 0.75 },
-            sun: 0.5,
-            name: "Tormenta de arena", icon: "🏜️",
-            layers: [{ kind: "points", preset: "sand" }, { kind: "rain", preset: "sandStreak" }],
-            mist: { color: 0xe6c48a, opacity: 0.28, heights: [6, 18, 34] }, fog: 0.55, wind: 1, gust: 9, sandstorm: true
+            sky: { top: 0xc9a06a, horizon: 0xe8c58e, amount: 0.75 }, sun: 0.5, name: "Tormenta de arena", icon: "🏜️",
+            layers: [{ kind: "rain", preset: "sandStreak" }, { kind: "points", preset: "sand" }],
+            ground: { cloudShadow: 0.2, sandFlow: 1, cloudCover: 0.1, wind: [1, 0.25] },
+            mist: { color: 0xe6c48a, opacity: 0.26, heights: [8, 24] }, fog: 0.55, wind: 1, gust: 9, sandstorm: true
         },
         moss_ruins: {
-            sky: { top: 0x9fbab0, horizon: 0xe2eee6, amount: 0.55 },
-            sun: 0.55,
-            name: "Bruma", icon: "🌁",
+            sky: { top: 0x9fbab0, horizon: 0xe2eee6, amount: 0.55 }, sun: 0.55, name: "Bruma", icon: "🌁",
             layers: [{ kind: "points", preset: "fireflies" }],
-            mist: { color: 0xdcefe2, opacity: 0.34, heights: [4, 11, 20, 32] }, fog: 0.62, wind: 0.1, gust: 0
+            ground: { cloudShadow: 0.3, wet: 0.25, cloudCover: 0.5, wind: [0.5, 1] },
+            mist: { color: 0xdcefe2, opacity: 0.32, heights: [5, 14, 28] }, fog: 0.62, wind: 0.1, gust: 0
         },
         crimson_isles: {
-            sun: 0.85,
-            name: "Esporas", icon: "🌸",
+            sun: 0.85, name: "Esporas", icon: "🌸",
             layers: [{ kind: "points", preset: "spores" }],
-            mist: { color: 0xf4c0c0, opacity: 0.16, heights: [8, 20] }, fog: 0.85, wind: 0.25, gust: 1
+            ground: { cloudShadow: 0.6, cloudCover: 0.35, wind: [1, 0.6] },
+            mist: { color: 0xf4c0c0, opacity: 0.14, heights: [10] }, fog: 0.85, wind: 0.25, gust: 1
         },
         storm_plateau: {
-            sky: { top: 0x232a36, horizon: 0x707c8c, amount: 0.6 },
-            sun: 0.3,
-            name: "Tormenta eléctrica", icon: "⛈️",
+            sky: { top: 0x232a36, horizon: 0x707c8c, amount: 0.6 }, sun: 0.3, name: "Tormenta eléctrica", icon: "⛈️",
             layers: [{ kind: "rain", preset: "storm" }],
-            lightning: true, mist: { color: 0x8a96a8, opacity: 0.22, heights: [10, 26] }, fog: 0.7, wind: 0.8, gust: 6, rain: 1
+            ground: { cloudShadow: 0.25, wet: 1, cloudCover: 1, wind: [1, 0.5] },
+            lightning: true, mist: { color: 0x8a96a8, opacity: 0.2, heights: [16] }, fog: 0.7, wind: 0.8, gust: 6, rain: 1
         },
         aurora_highlands: {
-            sun: 1,
-            name: "Nieve y aurora", icon: "🌌",
-            layers: [{ kind: "points", preset: "snowLight" }, { kind: "points", preset: "sparkle" }],
+            sun: 1, name: "Nieve y aurora", icon: "🌌",
+            layers: [{ kind: "points", preset: "snowLight" }],
+            ground: { cloudShadow: 0, snowGlint: 1.3, cloudCover: 0.1, wind: [1, 0.2] },
             fog: 0.9, wind: 0.25, gust: 0.5
         }
     };
@@ -76,19 +69,19 @@
     // Point / streak presets: vel in m/s, box = wrapped volume around the camera.
     const PRESETS = {
         pollen: { count: 700, color: 0xfff6c8, size: 1.1, vel: [1.5, 0.3, 0], sway: 2, opacity: 0.7, box: [260, 120, 260] },
-        dust: { count: 2600, color: 0xe2b27a, size: 1.4, vel: [14, -0.5, 4], sway: 1.5, opacity: 0.45, box: [320, 140, 320] },
-        snow: { count: 5200, color: 0xffffff, size: 2.1, vel: [3, -9, 1], sway: 2.5, opacity: 0.9, box: [300, 180, 300] },
+        dust: { count: 900, color: 0xe2b27a, size: 1.4, vel: [14, -0.5, 4], sway: 1.5, opacity: 0.45, box: [320, 140, 320] },
+        snow: { count: 2400, color: 0xffffff, size: 2.4, vel: [3, -9, 1], sway: 2.5, opacity: 0.9, box: [300, 180, 300] },
         snowFine: { count: 3000, color: 0xeef6ff, size: 1.1, vel: [5, -6, 2], sway: 1.5, opacity: 0.7, box: [180, 120, 180] },
-        snowLight: { count: 2200, color: 0xf2f6ff, size: 1.8, vel: [1.5, -5, 0.5], sway: 2, opacity: 0.8, box: [260, 160, 260] },
+        snowLight: { count: 1100, color: 0xf2f6ff, size: 1.8, vel: [1.5, -5, 0.5], sway: 2, opacity: 0.8, box: [260, 160, 260] },
         sparkle: { count: 500, color: 0xa8ffe8, size: 1.6, vel: [0, 0.5, 0], sway: 3, opacity: 0.9, box: [240, 120, 240], additive: true, twinkle: true },
         ash: { count: 3200, color: 0x8a7a7a, size: 1.9, vel: [2, -4, 1], sway: 2, opacity: 0.8, box: [300, 170, 300] },
-        embers: { count: 900, color: 0xff7a2a, size: 1.6, vel: [1, 6, 0], sway: 3, opacity: 1, box: [260, 140, 260], additive: true, twinkle: true },
-        sand: { count: 9000, color: 0xd8b070, size: 1.9, vel: [55, -1, 14], sway: 2, opacity: 0.75, box: [240, 110, 240] },
-        fireflies: { count: 650, color: 0xd8ff7a, size: 1.7, vel: [0, 0.2, 0], sway: 4, opacity: 1, box: [260, 22, 260], additive: true, twinkle: true, band: [2, 26] },
-        spores: { count: 1600, color: 0xffb8d0, size: 1.5, vel: [2, 1.2, 0.5], sway: 3.5, opacity: 0.75, box: [260, 140, 260] },
-        drizzle: { count: 5200, color: 0xe2f0ff, vel: [4, -60, 1], streak: 4.5, opacity: 0.45, box: [220, 150, 220] },
-        storm: { count: 9000, color: 0xd6e2f2, vel: [12, -85, 3], streak: 6, opacity: 0.36, box: [240, 170, 240] },
-        sandStreak: { count: 4200, color: 0xf0d098, vel: [80, -2, 18], streak: 9, opacity: 0.32, box: [220, 90, 220] }
+        embers: { count: 260, color: 0xff7a2a, size: 1.5, vel: [1, 5, 0], sway: 3, opacity: 0.9, box: [260, 140, 260], additive: true, twinkle: true },
+        sand: { count: 2200, color: 0xd8b070, size: 1.6, vel: [55, -1, 14], sway: 2, opacity: 0.55, box: [200, 90, 200] },
+        fireflies: { count: 220, color: 0xd8ff7a, size: 1.7, vel: [0, 0.2, 0], sway: 4, opacity: 1, box: [260, 22, 260], additive: true, twinkle: true, band: [2, 26] },
+        spores: { count: 500, color: 0xffb8d0, size: 1.5, vel: [2, 1.2, 0.5], sway: 3.5, opacity: 0.75, box: [260, 140, 260] },
+        drizzle: { count: 3200, color: 0xe2f0ff, vel: [4, -60, 1], streak: 4.5, opacity: 0.45, box: [220, 150, 220] },
+        storm: { count: 5000, color: 0xd6e2f2, vel: [12, -85, 3], streak: 6, opacity: 0.36, box: [240, 170, 240] },
+        sandStreak: { count: 2600, color: 0xf0d098, vel: [80, -2, 18], streak: 10, opacity: 0.28, box: [220, 90, 220] }
     };
 
     const Wx = { scene: null, active: [], mists: [], theme: null, cfg: null, time: 0, flash: 0, nextBolt: 6, bolt: null, geysers: [], devils: [], birds: [], gustT: 0, windPush: new THREE.Vector3(), quality: "high" };
@@ -240,155 +233,128 @@
         return mesh;
     }
 
-    // ---------- lightning ----------
-    function buildBolt(origin) {
-        const group = new THREE.Group();
-        const mat = new THREE.MeshBasicMaterial({ color: 0xeef4ff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-        const addChain = (start, steps, length, thickness) => {
-            let p = start.clone();
-            for (let i = 0; i < steps; i++) {
-                const next = p.clone().add(new THREE.Vector3((Math.random() - 0.5) * length * 0.8, -length, (Math.random() - 0.5) * length * 0.8));
-                const dir = next.clone().sub(p);
-                const seg = new THREE.Mesh(new THREE.CylinderGeometry(thickness, thickness, dir.length(), 4, 1, true), mat);
-                seg.position.copy(p).addScaledVector(dir, 0.5);
-                seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-                group.add(seg);
-                if (Math.random() < 0.18 && thickness > 0.7) addChain(next, 4, length * 0.7, thickness * 0.5);
-                p = next;
-                if (p.y < 0) break;
-            }
-        };
-        addChain(origin, 14, (origin.y) / 13, 1.6);
-        return { group, mat };
-    }
-
+    // ---------- lightning (procedural bolt textures live in WorldGfx) ----------
     function triggerLightning(cam) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 350 + Math.random() * 550;
-        const origin = new THREE.Vector3(cam.position.x + Math.sin(angle) * dist, 320, cam.position.z - Math.abs(Math.cos(angle)) * dist);
-        if (Wx.bolt) Wx.scene.remove(Wx.bolt.group);
-        Wx.bolt = buildBolt(origin);
-        Wx.bolt.life = 0.35;
-        Wx.scene.add(Wx.bolt.group);
-        Wx.flash = 1;
+        const angle = (Math.random() - 0.5) * 2.2;
+        const dist = 380 + Math.random() * 520;
+        const origin = new THREE.Vector3(cam.position.x + Math.sin(angle) * dist, 0, cam.position.z - Math.cos(angle) * dist);
+        if (window.WorldGfx && WorldGfx.spawnLightning) WorldGfx.spawnLightning(origin, 300 + Math.random() * 80);
+        Wx.flash = 0.55;
         if (window.GameAudio) setTimeout(() => GameAudio.play("thunder", dist), Math.min(2500, dist * 2.2));
     }
 
-    // ---------- lava geysers (volcano) ----------
-    function buildGeyser() {
-        const count = countFor(260);
-        const pos = new Float32Array(count * 3);
-        const g = new THREE.BufferGeometry();
-        g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-        const mat = new THREE.PointsMaterial({ color: 0xff8a2a, size: 4.2, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, map: softDot(), sizeAttenuation: true });
-        const pts = new THREE.Points(g, mat);
-        pts.frustumCulled = false;
-        const vel = new Float32Array(count * 3);
-        const life = new Float32Array(count);
-        const warn = new THREE.Mesh(new THREE.CircleGeometry(16, 28), new THREE.MeshBasicMaterial({ color: 0xff4a1a, transparent: true, opacity: 0, depthWrite: false }));
-        warn.rotation.x = -Math.PI / 2;
-        const column = new THREE.Mesh(new THREE.CylinderGeometry(4, 9, 1, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-        Wx.scene.add(pts, warn, column);
-        return { pts, vel, life, count, warn, column, state: "idle", t: 0, x: 0, z: 0, height: 0, hit: false };
+    // ---------- shader columns: lava geysers and dust devils ----------
+    function columnMaterial(kind) {
+        return new THREE.ShaderMaterial({
+            uniforms: { uTime: { value: 0 }, uIntensity: { value: 0 }, uSeed: { value: Math.random() * 10 } },
+            vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+            fragmentShader: `
+                uniform float uTime; uniform float uIntensity; uniform float uSeed;
+                varying vec2 vUv;
+                ${NOISE}
+                void main(){
+                    float y = vUv.y;
+                    ${kind === "fire" ? `
+                    vec2 q = vec2(vUv.x * 7.0 + uSeed, y * 2.6 - uTime * 2.2);
+                    float n = wx_fbm(q) + wx_fbm(q * 2.3 + 4.0) * 0.35;
+                    float body = smoothstep(0.42, 0.9, n + (1.0 - y) * 0.55);
+                    vec3 col = mix(vec3(1.0, 0.86, 0.45), vec3(1.0, 0.34, 0.05), smoothstep(0.0, 0.55, y));
+                    col = mix(col, vec3(0.18, 0.12, 0.12), smoothstep(0.55, 0.95, y));
+                    float a = body * smoothstep(1.0, 0.65, y) * smoothstep(0.0, 0.04, y) * uIntensity;
+                    gl_FragColor = vec4(col * (1.0 + (1.0 - y) * 0.6), a);
+                    ` : `
+                    vec2 q = vec2(vUv.x * 5.0 + uTime * 1.5 + y * 2.5 + uSeed, y * 3.0 - uTime * 0.7);
+                    float n = wx_fbm(q);
+                    float a = smoothstep(0.45, 0.82, n) * pow(sin(y * 3.14159), 0.6) * 0.42 * uIntensity;
+                    gl_FragColor = vec4(vec3(0.86, 0.68, 0.46) * (0.85 + y * 0.3), a);
+                    `}
+                }`,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
     }
 
-    let dotTexture = null;
-    function softDot() {
-        if (dotTexture) return dotTexture;
-        const c = document.createElement("canvas");
-        c.width = c.height = 64;
-        const ctx = c.getContext("2d");
-        const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        g.addColorStop(0, "rgba(255,255,255,1)");
-        g.addColorStop(0.35, "rgba(255,255,255,0.7)");
-        g.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, 64, 64);
-        dotTexture = new THREE.CanvasTexture(c);
-        return dotTexture;
+    function glowDecalMaterial() {
+        return new THREE.ShaderMaterial({
+            uniforms: { uTime: { value: 0 }, uIntensity: { value: 0 } },
+            vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+            fragmentShader: `
+                uniform float uTime; uniform float uIntensity; varying vec2 vUv;
+                void main(){
+                    vec2 p = vUv * 2.0 - 1.0; float r = length(p);
+                    float core = smoothstep(1.0, 0.0, r);
+                    float rim = smoothstep(0.08, 0.0, abs(r - (0.55 + 0.25 * fract(uTime * 1.4))));
+                    vec3 col = vec3(1.0, 0.42, 0.08) * (core * core * 1.2 + rim * 0.6);
+                    gl_FragColor = vec4(col * uIntensity, 1.0);
+                }`,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+    }
+
+    function buildGeyser() {
+        const column = new THREE.Mesh(new THREE.CylinderGeometry(10, 4, 1, 20, 1, true), columnMaterial("fire"));
+        column.geometry.translate(0, 0.5, 0);
+        column.frustumCulled = false;
+        const decal = new THREE.Mesh(new THREE.CircleGeometry(22, 32), glowDecalMaterial());
+        decal.rotation.x = -Math.PI / 2;
+        decal.renderOrder = 3;
+        Wx.scene.add(column, decal);
+        return { column, decal, state: "idle", t: 0, x: 0, z: 0, height: 0, hit: false };
     }
 
     function updateGeysers(delta, focus) {
         Wx.geysers.forEach((gz, idx) => {
             gz.t -= delta;
+            const cu = gz.column.material.uniforms, du = gz.decal.material.uniforms;
+            cu.uTime.value = Wx.time;
+            du.uTime.value = Wx.time;
             if (gz.state === "idle" && gz.t <= 0) {
                 gz.state = "warn";
                 gz.t = 1.6;
-                gz.x = focus.x + (Math.random() - 0.5) * 360;
                 gz.z = focus.z - 220 - Math.random() * 480;
-                if (window.WorldGfx && Math.random() < 0.6) gz.x = WorldGfx.riverX(gz.z) + (Math.random() - 0.5) * 60;
-                gz.warn.position.set(gz.x, 0.5, gz.z);
+                gz.x = window.WorldGfx && Math.random() < 0.6 ? WorldGfx.riverX(gz.z) + (Math.random() - 0.5) * 60 : focus.x + (Math.random() - 0.5) * 360;
+                gz.decal.position.set(gz.x, 0.6, gz.z);
                 gz.column.position.set(gz.x, 0, gz.z);
                 gz.hit = false;
-                gz.height = 70 + Math.random() * 50;
+                gz.height = 80 + Math.random() * 50;
             } else if (gz.state === "warn") {
-                gz.warn.material.opacity = 0.35 + 0.35 * Math.sin(performance.now() * 0.03);
+                du.uIntensity.value = 0.5 + 0.3 * Math.sin(Wx.time * 18);
                 if (gz.t <= 0) {
                     gz.state = "erupt";
-                    gz.t = 3.2;
-                    for (let i = 0; i < gz.count; i++) gz.life[i] = -Math.random() * 1.2;
+                    gz.t = 3.4;
                     if (window.GameAudio && Math.hypot(focus.x - gz.x, focus.z - gz.z) < 500) GameAudio.play("eruption");
                 }
             } else if (gz.state === "erupt") {
-                gz.warn.material.opacity = 0.6;
-                const k = Math.min(1, (3.2 - gz.t) * 3) * Math.min(1, gz.t * 2);
-                gz.column.material.opacity = 0.35 * k;
-                gz.column.scale.set(1, gz.height * k, 1);
-                gz.column.position.y = gz.height * k * 0.5;
-                if (gz.t <= 0) { gz.state = "idle"; gz.t = 1.5 + Math.random() * 3 + idx; gz.column.material.opacity = 0; gz.warn.material.opacity = 0; }
-                // Flying through the eruption costs shield.
-                if (!gz.hit && typeof playerShip !== "undefined" && Math.hypot(playerShip.position.x - gz.x, playerShip.position.z - gz.z) < 12 && playerShip.position.y < gz.height * k) {
+                const k = Math.min(1, (3.4 - gz.t) * 2.5) * Math.min(1, gz.t * 1.5);
+                du.uIntensity.value = 0.9 * k + 0.2;
+                cu.uIntensity.value = k;
+                gz.column.scale.set(0.6 + k * 0.4, gz.height * Math.max(0.05, k), 0.6 + k * 0.4);
+                if (gz.t <= 0) { gz.state = "idle"; gz.t = 2 + Math.random() * 3 + idx; cu.uIntensity.value = 0; du.uIntensity.value = 0; }
+                if (!gz.hit && typeof playerShip !== "undefined" && Math.hypot(playerShip.position.x - gz.x, playerShip.position.z - gz.z) < 11 && playerShip.position.y < gz.height * k) {
                     gz.hit = true;
                     if (window.Combat && typeof isPlaying !== "undefined" && isPlaying) {
                         Combat.addShield(-30);
                         if (Combat.shield <= 0 && typeof triggerCriticalCrash === "function") triggerCriticalCrash("ENGULLIDO POR LA LAVA", "#ff7a3a");
-                        if (typeof flashScreen === "function") flashScreen("rgba(255,120,40,1)", 0.35);
+                        if (typeof flashScreen === "function") flashScreen("rgba(255,120,40,1)", 0.3);
                     }
                 }
             }
-            const pos = gz.pts.geometry.attributes.position.array;
-            const erupting = gz.state === "erupt";
-            for (let i = 0; i < gz.count; i++) {
-                gz.life[i] += delta;
-                if (gz.life[i] >= 0 && gz.life[i] < delta * 1.5 && erupting) {
-                    pos[i * 3] = gz.x + (Math.random() - 0.5) * 6;
-                    pos[i * 3 + 1] = 1;
-                    pos[i * 3 + 2] = gz.z + (Math.random() - 0.5) * 6;
-                    gz.vel[i * 3] = (Math.random() - 0.5) * 22;
-                    gz.vel[i * 3 + 1] = 45 + Math.random() * 45;
-                    gz.vel[i * 3 + 2] = (Math.random() - 0.5) * 22;
-                }
-                if (gz.life[i] > 2.4 && erupting) gz.life[i] = -Math.random() * 0.2;
-                if (gz.life[i] >= 0) {
-                    gz.vel[i * 3 + 1] -= 32 * delta;
-                    pos[i * 3] += gz.vel[i * 3] * delta;
-                    pos[i * 3 + 1] = Math.max(-5, pos[i * 3 + 1] + gz.vel[i * 3 + 1] * delta);
-                    pos[i * 3 + 2] += gz.vel[i * 3 + 2] * delta;
-                } else if (!erupting) {
-                    pos[i * 3 + 1] = -50;
-                }
-            }
-            gz.pts.geometry.attributes.position.needsUpdate = true;
         });
     }
 
-    // ---------- dust devils ----------
     function buildDevil() {
-        const count = countFor(220);
-        const g = new THREE.BufferGeometry();
-        const pos = new Float32Array(count * 3);
-        g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-        const mat = new THREE.PointsMaterial({ color: 0xd8a870, size: 3.4, transparent: true, opacity: 0.55, depthWrite: false, map: softDot() });
-        const pts = new THREE.Points(g, mat);
-        pts.frustumCulled = false;
-        Wx.scene.add(pts);
-        const seeds = new Float32Array(count);
-        for (let i = 0; i < count; i++) seeds[i] = Math.random();
-        return { pts, seeds, count, x: 0, z: 0, life: 0, drift: new THREE.Vector2() };
+        const mesh = new THREE.Mesh(new THREE.CylinderGeometry(15, 2.5, 60, 24, 1, true), columnMaterial("dust"));
+        mesh.geometry.translate(0, 30, 0);
+        mesh.frustumCulled = false;
+        mesh.material.uniforms.uIntensity.value = 1;
+        Wx.scene.add(mesh);
+        return { mesh, x: 0, z: 0, life: 0, drift: new THREE.Vector2() };
     }
 
     function updateDevils(delta, focus) {
-        const t = Wx.time;
         Wx.devils.forEach((d) => {
             d.life -= delta;
             if (d.life <= 0 || Math.hypot(d.x - focus.x, d.z - focus.z) > 900) {
@@ -399,17 +365,10 @@
             }
             d.x += d.drift.x * delta;
             d.z += d.drift.y * delta;
-            const pos = d.pts.geometry.attributes.position.array;
-            for (let i = 0; i < d.count; i++) {
-                const s = d.seeds[i];
-                const h = ((s * 97.3 + t * 0.25) % 1) * 55;
-                const r = 2 + h * 0.28 + Math.sin(s * 40) * 1.5;
-                const a = s * 60 + t * (3 + s * 2) - h * 0.08;
-                pos[i * 3] = d.x + Math.cos(a) * r;
-                pos[i * 3 + 1] = h;
-                pos[i * 3 + 2] = d.z + Math.sin(a) * r;
-            }
-            d.pts.geometry.attributes.position.needsUpdate = true;
+            d.mesh.position.set(d.x, 0, d.z);
+            d.mesh.rotation.y += delta * 1.5;
+            d.mesh.material.uniforms.uTime.value = Wx.time;
+            d.mesh.material.uniforms.uIntensity.value = Math.min(1, d.life / 3);
         });
     }
 
@@ -460,11 +419,10 @@
     function clear() {
         Wx.active.forEach((o) => { Wx.scene.remove(o); o.geometry.dispose(); o.material.dispose(); });
         Wx.mists.forEach((m) => { Wx.scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
-        Wx.geysers.forEach((g) => { Wx.scene.remove(g.pts, g.warn, g.column); });
-        Wx.devils.forEach((d) => Wx.scene.remove(d.pts));
+        Wx.geysers.forEach((g) => { Wx.scene.remove(g.column, g.decal); });
+        Wx.devils.forEach((d) => Wx.scene.remove(d.mesh));
         Wx.birds.forEach((b) => Wx.scene.remove(b.flock));
-        if (Wx.bolt) Wx.scene.remove(Wx.bolt.group);
-        Wx.active = []; Wx.mists = []; Wx.geysers = []; Wx.devils = []; Wx.birds = []; Wx.bolt = null;
+        Wx.active = []; Wx.mists = []; Wx.geysers = []; Wx.devils = []; Wx.birds = [];
     }
 
     function init(scene) {
@@ -507,6 +465,7 @@
         if (!cfg || !window.WorldGfx) return;
         WorldGfx.setWeatherFog(cfg.fog, cfg.sun ?? 1);
         WorldGfx.setWeatherSky(cfg.sky || null);
+        if (WorldGfx.setGroundFx) WorldGfx.setGroundFx(cfg.ground || {});
     }
 
     function update(delta, cam, focus) {
@@ -531,13 +490,8 @@
             if (Wx.nextBolt <= 0) {
                 triggerLightning(cam);
                 Wx.nextBolt = 4 + Math.random() * 7;
-                if (Math.random() < 0.35) setTimeout(() => { Wx.flash = 0.8; }, 140);
+                if (Math.random() < 0.35) setTimeout(() => triggerLightning(cam), 160 + Math.random() * 200);
             }
-        }
-        if (Wx.bolt) {
-            Wx.bolt.life -= delta;
-            Wx.bolt.mat.opacity = Wx.bolt.life > 0 ? (Math.random() < 0.7 ? 1 : 0.2) : 0;
-            if (Wx.bolt.life <= 0) { Wx.scene.remove(Wx.bolt.group); Wx.bolt = null; }
         }
         Wx.flash = Math.max(0, Wx.flash - delta * 3.2);
         if (window.WorldGfx && WorldGfx.setFlash) WorldGfx.setFlash(Wx.flash);

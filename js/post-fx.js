@@ -58,6 +58,7 @@
 
     function render() {
         renderer.render(scene, camera);
+        if (window.WorldGfx && WorldGfx.renderOverlay) WorldGfx.renderOverlay(renderer);
     }
 
     function resize() { /* renderer.setSize handles everything for now */ }

@@ -5697,17 +5697,40 @@
             awardStylePoints("IMPULSO", 20, object.mesh.position, "#9fefff");
         }
 
+        // Pickup feedback: a camera-facing shader shockwave (ring + flash) instead of particle spray.
         function createPickupParticles() {
-            const geom = new THREE.OctahedronGeometry(0.6, 0);
-            for (let i = 0; i < 60; i++) {
-                const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+            const geom = new THREE.PlaneGeometry(1, 1);
+            for (let i = 0; i < 16; i++) {
+                const mat = new THREE.ShaderMaterial({
+                    uniforms: { uProgress: { value: 0 }, uColor: { value: new THREE.Color() } },
+                    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+                    fragmentShader: `
+                        uniform float uProgress; uniform vec3 uColor; varying vec2 vUv;
+                        void main(){
+                            vec2 p = vUv * 2.0 - 1.0; float r = length(p);
+                            float t = uProgress;
+                            float radius = 0.15 + t * 0.8;
+                            float width = mix(0.16, 0.02, t);
+                            float ring = smoothstep(width, 0.0, abs(r - radius));
+                            float flash = exp(-r * r * 18.0) * (1.0 - smoothstep(0.0, 0.35, t));
+                            float rays = pow(abs(cos(atan(p.y, p.x) * 4.0)), 24.0) * exp(-r * 3.0) * (1.0 - t) * 0.6;
+                            float fade = 1.0 - t;
+                            vec3 col = uColor * ring * fade * 1.4 + vec3(1.0) * flash * 1.2 + uColor * rays;
+                            gl_FragColor = vec4(col, 1.0);
+                        }`,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                const mesh = new THREE.Mesh(geom, mat);
                 mesh.visible = false;
-                mesh.userData = { active: false, life: 0, maxLife: 1, vel: new THREE.Vector3() };
+                mesh.frustumCulled = false;
+                mesh.userData = { active: false, life: 0, maxLife: 0.55, size: 20 };
                 scene.add(mesh);
                 pickupParticles.push(mesh);
             }
             const debrisGeom = new THREE.BoxGeometry(1.2, 0.3, 0.9);
-            for (let i = 0; i < 14; i++) {
+            for (let i = 0; i < 10; i++) {
                 const mesh = new THREE.Mesh(debrisGeom, i % 3 === 0 ? shipMaterials.secondary : i % 3 === 1 ? shipMaterials.primary : shipMaterials.accent);
                 mesh.visible = false;
                 mesh.castShadow = true;
@@ -5718,17 +5741,13 @@
         }
 
         function spawnPickupBurst(position, color, count = 18) {
-            let spawned = 0;
-            for (const p of pickupParticles) {
-                if (p.userData.active) continue;
-                p.userData.active = true;
-                p.userData.maxLife = p.userData.life = 0.5 + Math.random() * 0.5;
-                p.position.copy(position);
-                p.userData.vel.set((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize().multiplyScalar(18 + Math.random() * 30);
-                p.material.color.setHex(color);
-                p.visible = true;
-                if (++spawned >= count) break;
-            }
+            const p = pickupParticles.find((candidate) => !candidate.userData.active) || pickupParticles[0];
+            p.userData.active = true;
+            p.userData.maxLife = p.userData.life = 0.5;
+            p.userData.size = 10 + Math.min(count, 30) * 0.9;
+            p.position.copy(position);
+            p.material.uniforms.uColor.value.setHex(color);
+            p.visible = true;
         }
 
         function spawnCrashDebris(position) {
@@ -5747,13 +5766,10 @@
             pickupParticles.forEach((p) => {
                 if (!p.userData.active) return;
                 p.userData.life -= delta;
-                p.userData.vel.multiplyScalar(1 - delta * 3);
-                p.position.addScaledVector(p.userData.vel, delta);
-                const k = Math.max(0, p.userData.life / p.userData.maxLife);
-                p.material.opacity = k;
-                p.scale.setScalar(0.4 + k);
-                p.rotation.x += delta * 6;
-                p.rotation.y += delta * 4;
+                const t = 1 - Math.max(0, p.userData.life / p.userData.maxLife);
+                p.material.uniforms.uProgress.value = t;
+                p.quaternion.copy(camera.quaternion);
+                p.scale.setScalar(p.userData.size);
                 if (p.userData.life <= 0) { p.userData.active = false; p.visible = false; }
             });
             debrisParticles.forEach((d) => {
@@ -6391,15 +6407,18 @@
         }
 
         function updateWind(delta) {
-            const speedRatio = Math.max(0, (flightSpeed - 80) / 100);
-            const targetOpacity = isSkidding ? 0 : speedRatio * 0.25;
+            // Speed lines only when genuinely fast (dives, boosts) and kept to the screen edges.
+            const speedRatio = Math.max(0, (flightSpeed - 145) / 90);
+            const targetOpacity = isSkidding ? 0 : Math.min(1, speedRatio) * 0.2;
 
             windParticles.children.forEach((particle) => {
                 particle.userData.offsetZ += (flightSpeed * 0.5) * delta;
                 if (particle.userData.offsetZ > -5) {
                     particle.userData.offsetZ -= 45;
-                    particle.userData.offsetX = (Math.random() - 0.5) * 40;
-                    particle.userData.offsetY = (Math.random() - 0.5) * 30;
+                    const edgeAngle = Math.random() * Math.PI * 2;
+                    const edgeRadius = 14 + Math.random() * 10;
+                    particle.userData.offsetX = Math.cos(edgeAngle) * edgeRadius * 1.3;
+                    particle.userData.offsetY = Math.sin(edgeAngle) * edgeRadius * 0.8;
                 }
 
                 particle.position.set(particle.userData.offsetX, particle.userData.offsetY, particle.userData.offsetZ);
