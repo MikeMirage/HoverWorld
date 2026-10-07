@@ -363,8 +363,9 @@
         }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/menu.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/world-visuals.js"></script>
     <script src="js/world-kinds.js"></script>
@@ -375,6 +376,7 @@
     <script src="js/bosses.js"></script>
     <script src="js/worlds-extra.js"></script>
     <script src="js/gamepad.js"></script>
+    <script src="js/menu.js"></script>
 </head>
 <body class="menu-view">
         <div id="ui-layer">
@@ -473,7 +475,10 @@
         </div>
     </div>
 
-    <div id="start-screen" class="screen home">
+    <div id="start-screen" class="screen nmenu">
+        <div id="nm-root"></div>
+        <!-- Legacy meta widgets: still updated by refreshMetaUi(), never shown. -->
+        <div id="legacy-meta" hidden>
         <header class="home-top">
             <div class="home-brand"><span class="brand-glyph"></span><span>HoverWorld</span></div>
             <div class="home-wallet">
@@ -596,6 +601,7 @@
             </div>
             <span class="dock-glyph pad-only">R1</span>
         </nav>
+    </div>
     </div>
 
     <div id="game-over-screen" class="screen hidden">
@@ -2202,7 +2208,7 @@
 
         function refreshMetaUi() {
             applySelectedLoadout();
-            setTimeout(renderWorldGrid, 0);
+            setTimeout(() => { renderWorldGrid(); if (window.Menu) Menu.refresh(); }, 0);
             const aircraft = AIRCRAFT_PROFILES[menuAircraftPreviewId] || currentAircraftProfile;
             const aircraftLocked = !saveState.unlockedAircraftIds.includes(aircraft.id);
             const world = getMenuWorldProfile();
@@ -2798,6 +2804,8 @@
 
         function updateMenuShowcase(delta) {
             const t = performance.now() * 0.001;
+            // The world map shows the destination itself; the aircraft returns elsewhere.
+            playerShip.visible = !(window.Menu && (Menu.screen === "map" || Menu.screen === "title"));
             playerShip.position.x = Math.sin(t * 0.4) * 2;
             playerShip.position.y = 58 + Math.sin(t * 0.9) * 1.6;
             playerShip.position.z -= 18 * delta;
@@ -2872,6 +2880,7 @@
             document.body.classList.add("menu-view");
             uiStallWarning.style.display = "none";
             setActiveMetaSection(null);
+            Menu.showMap();
             refreshMetaUi();
         }
 
@@ -3128,6 +3137,7 @@
             Pad.on(() => renderInputHint());
             renderInputHint();
 
+            Menu.init();
             refreshMetaUi();
             document.body.classList.add("menu-view");
             setActiveMetaSection(null);
@@ -3825,10 +3835,7 @@
         function padBack(layer) {
             if (layer.id === "cheats-screen") layer.querySelector('[data-cheat="close"]').click();
             else if (layer.id === "pause-screen") setPaused(false);
-            else if (layer.id === "start-screen" && activeMetaSection) {
-                setActiveMetaSection(null);
-                setTimeout(() => Pad.focusIn(document.querySelector(".home-hero .cta")?.parentElement), 260);
-            }
+            else if (layer.id === "start-screen") Menu.back();
             else if (layer.id === "game-over-screen") document.getElementById("menu-btn").click();
             GameAudio.play("click");
         }
@@ -3853,19 +3860,12 @@
             if (padFiring) { padFiring = false; Combat.setFiring(false); }
             padLook.x = padLook.y = 0;
             Pad.updateMenu(delta, padBack);
-            // L1 / R1 flip through the hangar tabs on the main menu.
+            // L1 / R1 page through worlds and tabs; OPTIONS jumps straight into the selected level.
             const layer = Pad.activeLayer();
             if (layer && layer.id === "start-screen") {
-                const tabs = Array.from(document.querySelectorAll("[data-meta-target]")).map((b) => b.dataset.metaTarget);
-                const step = Pad.just(B.R1) ? 1 : Pad.just(B.L1) ? -1 : 0;
-                if (step) {
-                    const i = tabs.indexOf(activeMetaSection);
-                    const next = i < 0 ? (step > 0 ? 0 : tabs.length - 1) : i + step;
-                    setActiveMetaSection(next < 0 || next >= tabs.length ? null : tabs[next]);
-                    GameAudio.play("select");
-                    setTimeout(() => Pad.focusIn(document.querySelector(".meta-panel:not(.is-hidden)") || document.getElementById("start-btn").parentElement), 260);
-                }
-                if (Pad.just(B.OPTIONS)) document.getElementById("start-btn").click();
+                if (Pad.just(B.R1)) Menu.shoulder(1);
+                if (Pad.just(B.L1)) Menu.shoulder(-1);
+                if (Pad.just(B.OPTIONS) && (Menu.screen === "hub" || Menu.screen === "map")) document.querySelector('#nm-root [data-act="play"]')?.click();
             }
         }
 

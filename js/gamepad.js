@@ -212,11 +212,12 @@
     ["pointerdown", "keydown"].forEach((ev) => window.addEventListener(ev, (e) => { if (e.isTrusted) setActive(false); }, true));
 
     // Move focus to the first navigable control inside a container.
-    function focusIn(container) {
+    function focusIn(container, exact) {
         const layer = activeLayer();
         if (!layer || !S.active || !container) return;
         const list = candidates(layer).filter((el) => container.contains(el));
-        const first = list.find((el) => el.matches("[data-pad-default], .selected")) || list[0];
+        if (exact && list.includes(exact)) { setFocus(exact); return; }
+        const first = list.find((el) => el.matches("[data-pad-default]")) || list.find((el) => el.matches(".selected, .sel")) || list[0];
         if (first) setFocus(first);
     }
 
